@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Digital Universitario - Simulador SNG v2</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            margin: 0; 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* Chasis de Tableta Médica Futurista */
+        .tablet-frame {
+            width: 100%;
+            max-width: 980px;
+            height: 94vh;
+            max-height: 800px;
+            background: rgba(15, 23, 42, 0.96);
+            border: 2px solid rgba(56, 189, 248, 0.25);
+            border-radius: 28px;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.85), 0 0 20px rgba(56, 189, 248, 0.15);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Cuadrícula tecnológica de fondo */
+        .tech-grid {
+            background-size: 32px 32px;
+            background-image: 
+                linear-gradient(to right, rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+        }
+
+        /* Indicador de progreso de retos */
+        .step-node {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background-color: #1e293b;
+            border: 1px solid #475569;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .step-node.active {
+            background-color: #38bdf8;
+            border-color: #7dd3fc;
+            box-shadow: 0 0 12px #38bdf8;
+        }
+        .step-node.completed {
+            background-color: #10b981;
+            border-color: #34d399;
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        /* Tarjeta de Insumos Médicos Futurista */
+        .supply-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1.5px solid rgba(71, 85, 105, 0.6);
+            border-radius: 16px;
+            transition: all 0.25s ease-in-out;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .supply-card:hover {
+            border-color: rgba(56, 189, 248, 0.8);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(56, 189, 248, 0.15);
+        }
+        .supply-card.selected {
+            border-color: #38bdf8;
+            background: rgba(14, 165, 233, 0.15);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+        }
+
+        /* Canvas de inclinación SNG */
+        #angle-canvas {
+            background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
+            border: 2px solid rgba(56, 189, 248, 0.3);
+            border-radius: 16px;
+            cursor: crosshair;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+
+        @keyframes pulse-fast {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .animate-pulse-fast {
+            animation: pulse-fast 0.6s infinite;
+        }
+    </style>
+</head>
+<body class="text-slate-100 select-none p-2 sm:p-4">
+
+    <!-- Tableta Digital Futurista -->
+    <div class="tablet-frame tech-grid p-4 sm:p-6">
+        
+        <!-- ENCABEZADO INSTITUCIONAL -->
+        <header class="flex justify-between items-center border-b border-slate-700/80 pb-3 mb-3">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-cyan-600/20 border border-cyan-500/40 rounded-xl">
+                    <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg tracking-wide text-slate-100">HOSPITAL DIGITAL UNIVERSITARIO</h1>
+                    <p class="text-xs text-cyan-400 font-medium">Procedimiento de Colocación de Sonda Nasogástrica (SNG) - v2</p>
+                </div>
+            </div>
+
+            <!-- Indicador de Progreso -->
+            <div id="progress-container" class="hidden flex-col items-end gap-1.5">
+                <span id="step-label" class="text-xs font-bold text-cyan-300">Fase 1 de 5</span>
+                <div class="flex gap-1.5" id="step-nodes">
+                    <div class="step-node active"></div>
+                    <div class="step-node"></div>
+                    <div class="step-node"></div>
+                    <div class="step-node"></div>
+                    <div class="step-node"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- PANTALLA PRINCIPAL DE JUEGO Y PUZZLES -->
+        <main id="main-content" class="flex-1 overflow-y-auto pr-1 flex flex-col justify-center">
+            
+            <!-- BIENVENIDA Y SELECCIÓN DE PROCEDIMIENTO -->
+            <div id="screen-welcome" class="space-y-4 text-center max-w-xl mx-auto py-2">
+                <div class="w-14 h-14 bg-cyan-500/10 text-cyan-400 rounded-2xl flex items-center justify-center mx-auto border border-cyan-500/30">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-100">Estación de Enfermería - Hospital Virtual 3D</h2>
+                    <p class="text-xs text-slate-300 mt-1">
+                        Selecciona el procedimiento médico correspondiente indicado en la solicitud clínica para el paciente asignado:
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-left text-xs">
+                    <button onclick="selectProcedure('A')" class="p-3 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 rounded-xl transition">
+                        <span class="font-bold text-cyan-400 block">Procedimiento A</span> Cateterismo Vesical (Sonda Foley)
+                    </button>
+                    <button onclick="selectProcedure('B')" class="p-3 bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/60 rounded-xl transition">
+                        <span class="font-bold text-cyan-300 block">Procedimiento B</span> Instalación de Sonda Nasogástrica (SNG)
+                    </button>
+                    <button onclick="selectProcedure('C')" class="p-3 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 rounded-xl transition">
+                        <span class="font-bold text-cyan-400 block">Procedimiento C</span> Punción Lumbar
+                    </button>
+                    <button onclick="selectProcedure('D')" class="p-3 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 rounded-xl transition">
+                        <span class="font-bold text-cyan-400 block">Procedimiento D</span> Acceso Venoso Central
+                    </button>
+                </div>
+
+                <div class="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-left text-xs text-red-300">
+                    ⚠️ <strong>Evaluación Formativa:</strong> Cada mini-puzzle evaluará tu criterio técnico. Si cometes un fallo crítico de seguridad, la simulación se abortará.
+                </div>
+            </div>
+
+            <!-- CASO CLÍNICO -->
+            <div id="screen-case" class="space-y-4 max-w-xl mx-auto hidden">
+                <div class="bg-slate-800/90 border border-slate-700 p-4 rounded-xl text-left text-xs text-slate-300 space-y-2">
+                    <div class="flex justify-between items-center text-slate-100 font-bold border-b border-slate-700 pb-2">
+                        <span class="text-cyan-400 text-sm">Historia Clínica N° 6802</span>
+                        <span class="text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">ORDEN URGENTE</span>
+                    </div>
+                    <p><strong>Paciente:</strong> Doña Carmen Ortiz (68 años) · Habitación 304</p>
+                    <p><strong>Diagnóstico:</strong> Obstrucción intestinal parcial.</p>
+                    <p><strong>Prescripción Médica:</strong> Instalación de Sonda Nasogástrica para descompresión gástrica a gravedad, balance hídrico estricto y ayuno total.</p>
+                    <div class="p-2 bg-amber-500/10 border border-amber-500/30 rounded text-amber-200">
+                        📌 <strong>Alerta de Antecedentes:</strong> Reporta traumatismo facial antiguo. Muestra sospecha de desviación septal severa en fosa nasal izquierda.
+                    </div>
+                </div>
+
+                <button onclick="startChallenge(1)" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 font-semibold rounded-xl text-sm transition shadow-lg shadow-cyan-600/30">
+                    Iniciar Preparación de Protocolo
+                </button>
+            </div>
+
+            <!-- RETO 1: CRIBA DE DECISIONES DE PROTOCOLO -->
+            <div id="screen-reto-1" class="space-y-3 hidden max-w-2xl mx-auto w-full">
+                <div class="text-center">
+                    <h2 class="text-lg font-bold text-slate-100">RETO 1: Criba de Acciones Esenciales</h2>
+                    <p class="text-xs text-slate-400">Selecciona únicamente las 6 acciones correctas de preparación y seguridad para la SNG.</p>
+                </div>
+                <div id="reto1-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs max-h-[340px] overflow-y-auto p-1">
+                    <!-- Dinámico -->
+                </div>
+                <div class="flex justify-between items-center pt-2">
+                    <span id="reto1-count" class="text-xs font-bold text-cyan-400">0 de 6 seleccionados</span>
+                    <button onclick="validateReto1()" class="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 font-semibold rounded-xl text-xs transition shadow-lg shadow-cyan-600/30">
+                        Confirmar Selección
+                    </button>
+                </div>
+            </div>
+
+            <!-- ORGANIZACIÓN DE PASOS -->
+            <div id="screen-reto-1-order" class="space-y-3 hidden max-w-xl mx-auto w-full">
+                <div class="text-center">
+                    <h2 class="text-lg font-bold text-slate-100">ORGANIZACIÓN DE PROTOCOLO</h2>
+                    <p class="text-xs text-slate-400">Ordena cronológicamente las 6 acciones seleccionadas usando los botones de posición:</p>
+                </div>
+                <div id="reto1-order-list" class="space-y-2 max-h-[340px] overflow-y-auto p-1">
+                    <!-- Dinámico -->
+                </div>
+                <button onclick="validateReto1Order()" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 font-semibold rounded-xl text-sm transition shadow-lg shadow-cyan-600/30 mt-2">
+                    Ir a la Mesa de Insumos
+                </button>
+            </div>
+
+            <!-- RETO 2: MESA DE PREPARACIÓN DE INSUMOS -->
+            <div id="screen-reto-2" class="space-y-3 hidden w-full">
+                <div class="flex justify-between items-end border-b border-slate-700/60 pb-2">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-100">MESA DE TRABAJO INTERACTIVA</h2>
+                        <p class="text-xs text-slate-400">Selecciona los 8 insumos adecuados para la descompresión gástrica de Doña Carmen.</p>
+                    </div>
+                    <span id="reto2-count" class="text-xs font-bold text-cyan-400">0/8 Seleccionados</span>
+                </div>
+                
+                <div id="reto2-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-[420px] overflow-y-auto p-1">
+                    <!-- Dinámico -->
+                </div>
+
+                <button onclick="validateReto2()" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 font-semibold rounded-xl text-sm transition shadow-lg shadow-cyan-600/30">
+                    INGRESAR A LA HABITACIÓN 3D
+                </button>
+            </div>
+
+            <!-- MINI-PUZZLE 1: INSPECCIÓN DE FOSAS NASALES (SPOTTER) -->
+            <div id="screen-mp-1" class="space-y-4 max-w-md mx-auto text-center hidden">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100">MINI-PUZZLE 1: Permeabilidad Nasal</h2>
+                    <p class="text-xs text-slate-400">Evalúa el flujo de aire de Doña Carmen. Haz clic sobre la fosa nasal idónea para la inserción:</p>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4 flex flex-col items-center gap-4">
+                    <div class="relative w-48 h-48 bg-slate-800 rounded-full border-2 border-cyan-500/40 flex items-center justify-center overflow-hidden">
+                        <!-- Representación esquemática nasal -->
+                        <div class="text-slate-400 font-bold text-xs absolute top-2">ROSTRO PACIENTE</div>
+                        <div class="flex gap-8 items-center mt-4">
+                            <!-- Fosa Izquierda -->
+                            <button onclick="selectNasalFossa('izquierda')" class="group flex flex-col items-center p-3 bg-slate-700/50 hover:bg-red-500/20 border border-slate-600 hover:border-red-500 rounded-xl transition">
+                                <span class="text-xs font-bold text-slate-200">Fosa Izq.</span>
+                                <span class="text-[10px] text-red-400 mt-1">Flujo 10% ⚠️</span>
+                            </button>
+                            <!-- Fosa Derecha -->
+                            <button onclick="selectNasalFossa('derecha')" class="group flex flex-col items-center p-3 bg-slate-700/50 hover:bg-emerald-500/20 border border-slate-600 hover:border-emerald-500 rounded-xl transition">
+                                <span class="text-xs font-bold text-slate-200">Fosa Der.</span>
+                                <span class="text-[10px] text-emerald-400 mt-1">Flujo 100% ✓</span>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-400">Inspección con Linterna Clínica + Prueba de flujo de aire</p>
+                </div>
+            </div>
+
+            <!-- MINI-PUZZLE 2: MEDICIÓN ANATÓMICA NEX -->
+            <div id="screen-mp-2" class="space-y-4 max-w-md mx-auto text-center hidden">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100">MINI-PUZZLE 2: Medición NEX</h2>
+                    <p class="text-xs text-slate-400">Selecciona en orden los 3 puntos anatómicos para medir la longitud de la sonda:</p>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4 space-y-3">
+                    <div class="flex justify-center gap-2" id="nex-buttons">
+                        <button onclick="clickNEX('N')" id="nex-N" class="px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold">1. Nariz (N)</button>
+                        <button onclick="clickNEX('E')" id="nex-E" class="px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold">2. Oreja (E)</button>
+                        <button onclick="clickNEX('X')" id="nex-X" class="px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold">3. Xifoides (X)</button>
+                    </div>
+
+                    <div class="text-xs font-bold text-cyan-400">Secuencia actual: <span id="nex-sequence">---</span></div>
+
+                    <div class="pt-2 border-t border-slate-800">
+                        <label class="text-xs text-slate-300 block mb-1">Ajustar marca de referencia SNG (cm):</label>
+                        <input type="range" id="nex-cm-slider" min="30" max="75" value="55" oninput="document.getElementById('cm-val').innerText = this.value" class="w-full accent-cyan-500">
+                        <span class="text-xs font-bold text-cyan-300"><span id="cm-val">55</span> cm</span>
+                    </div>
+                </div>
+
+                <button onclick="validateMP2()" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 font-semibold rounded-xl text-sm transition shadow-lg shadow-cyan-600/30">
+                    Fijar Marca de Medición
+                </button>
+            </div>
+
+            <!-- MINI-PUZZLE 3: ÁNGULO E INSERCIÓN INICIAL -->
+            <div id="screen-mp-3" class="space-y-3 max-w-md mx-auto text-center hidden">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100">MINI-PUZZLE 3: Ángulo de Inserción Nasal</h2>
+                    <p class="text-xs text-slate-400">Dirige la inclinación de la sonda hacia el suelo de la cavidad nasal (perpendicular al rostro):</p>
+                </div>
+                <div class="flex flex-col items-center gap-2">
+                    <canvas id="angle-canvas" width="280" height="180"></canvas>
+                    <div class="text-xs font-bold text-cyan-400">Dirección: <span id="current-angle-text">0</span>° (Apuntar hacia abajo/atrás)</div>
+                </div>
+                <button onclick="validateMP3()" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 font-semibold rounded-xl text-sm transition shadow-lg shadow-cyan-600/30">
+                    Avanzar Sonda 10 cm
+                </button>
+            </div>
+
+            <!-- MINI-PUZZLE 4: MANIOBRA DE DEGLUCIÓN (QTE) -->
+            <div id="screen-mp-4" class="space-y-4 max-w-md mx-auto text-center hidden">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100">MINI-PUZZLE 4: Sincronización de Deglución</h2>
+                    <p class="text-xs text-slate-400">Haz clic en "AVANZAR" exactamente cuando la aguja entre en la ZONA VERDE de deglución de la paciente:</p>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-700 rounded-2xl p-4 space-y-4">
+                    <div class="relative w-full h-8 bg-slate-800 rounded-full border border-slate-700 overflow-hidden">
+                        <!-- Zona verde -->
+                        <div class="absolute top-0 bottom-0 left-[40%] w-[20%] bg-emerald-500/40 border-x border-emerald-400"></div>
+                        <!-- Aguja oscilante -->
+                        <div id="qte-needle" class="absolute top-0 bottom-0 w-2 bg-cyan-400 rounded-full left-[0%] transition-none"></div>
+                    </div>
+
+                    <button onclick="triggerQTE()" class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-sm transition shadow-lg shadow-emerald-600/30">
+                        ¡AVANZAR SONDA AHORA!
+                    </button>
+                </div>
+
+                <!-- ALERTA EMERGENCIA BRONCOASPIRACIÓN -->
+                <div id="emergency-box" class="hidden p-4 bg-red-950 border-2 border-red-500 rounded-2xl space-y-2 animate-pulse-fast">
+                    <h3 class="text-sm font-bold text-red-400">⚠️ ¡ALERTA CRÍTICA DE VÍA AÉREA!</h3>
+                    <p class="text-xs text-red-200">Doña Carmen presenta tos violenta y la saturación cae a 85%. La sonda ingresó a la tráquea.</p>
+                    <button onclick="emergencyWithdraw()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-extrabold rounded-xl text-xs uppercase tracking-wider">
+                        🚨 ¡RETIRAR SONDA INMEDIATAMENTE!
+                    </button>
+                </div>
+            </div>
+
+            <!-- MINI-PUZZLE 5: TRIÁNGULO DE VERIFICACIÓN -->
+            <div id="screen-mp-5" class="space-y-4 max-w-lg mx-auto text-center hidden">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100">MINI-PUZZLE 5: Triple Verificación Gástrica</h2>
+                    <p class="text-xs text-slate-400">Ejecuta las 3 pruebas de seguridad obligatorias antes de habilitar la sonda:</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                    <button onclick="runVerification('ph')" id="vbtn-ph" class="p-3 bg-slate-800 border border-slate-700 rounded-xl flex flex-col items-center gap-1 hover:border-cyan-500">
+                        <span class="font-bold text-cyan-400">1. Medición de pH</span>
+                        <span id="vstatus-ph" class="text-[10px] text-slate-400">Pendiente</span>
+                    </button>
+                    <button onclick="runVerification('auscultation')" id="vbtn-auscultation" class="p-3 bg-slate-800 border border-slate-700 rounded-xl flex flex-col items-center gap-1 hover:border-cyan-500">
+                        <span class="font-bold text-cyan-400">2. Auscultación</span>
+                        <span id="vstatus-auscultation" class="text-[10px] text-slate-400">Pendiente</span>
+                    </button>
+                    <button onclick="runVerification('water')" id="vbtn-water" class="p-3 bg-slate-800 border border-slate-700 rounded-xl flex flex-col items-center gap-1 hover:border-cyan-500">
+                        <span class="font-bold text-cyan-400">3. Vaso de Agua</span>
+                        <span id="vstatus-water" class="text-[10px] text-slate-400">Pendiente</span>
+                    </button>
+                </div>
+
+                <button onclick="validateMP5()" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 font-semibold rounded-xl text-sm transition shadow-lg shadow-cyan-600/30">
+                    Fijar Sonda y Finalizar
+                </button>
+            </div>
+
+            <!-- RESULTADO GLOBAL Y EVALUACIÓN -->
+            <div id="screen-result" class="space-y-4 text-center max-w-md mx-auto hidden">
+                <div id="result-badge" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto border text-2xl font-bold"></div>
+                <div>
+                    <h2 id="result-score" class="text-2xl font-extrabold text-slate-100"></h2>
+                    <p id="result-title" class="text-xs font-bold uppercase tracking-wider mt-1"></p>
+                    <p id="result-desc" class="text-xs text-slate-300 mt-2 leading-relaxed"></p>
+                </div>
+                <div id="result-breakdown" class="bg-slate-800/80 border border-slate-700 p-3 rounded-xl text-left text-xs space-y-1 text-slate-300"></div>
+                <button onclick="resetGame()" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 font-semibold rounded-xl text-sm transition shadow-lg shadow-cyan-600/30">
+                    Repetir Simulación
+                </button>
+            </div>
+
+        </main>
+
+        <!-- OVERLAY DE RETROALIMENTACIÓN FORMATIVA -->
+        <div id="feedback-overlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-6 hidden z-50">
+            <div id="feedback-card" class="bg-slate-900 border p-6 sm:p-8 rounded-2xl max-w-md w-full text-center space-y-4 shadow-2xl">
+                <div id="feedback-icon" class="w-14 h-14 rounded-full flex items-center justify-center mx-auto border text-2xl font-bold"></div>
+                <div>
+                    <h3 id="feedback-title" class="text-xl font-bold"></h3>
+                    <p id="feedback-message" class="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed whitespace-pre-line"></p>
+                </div>
+                <button id="feedback-btn" onclick="closeFeedback()" class="w-full py-2.5 font-semibold rounded-xl text-sm transition">
+                    Entendido
+                </button>
+            </div>
+        </div>
+
+        <!-- FOOTER INSTITUCIONAL -->
+        <footer class="border-t border-slate-700/80 pt-3 mt-2 flex justify-between items-center text-xs text-slate-400">
+            <div class="flex items-center gap-2 font-semibold tracking-wider text-[11px] text-slate-400">
+                <span>UAN</span>
+                <span>·</span>
+                <span>UNAL</span>
+                <span>·</span>
+                <span>UNAM</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] text-slate-400 hidden sm:inline">Entorno Virtual SNG v2</span>
+                <img src="images/logo.png" alt="Logo Hospital Digital Universitario" class="h-7 w-auto object-contain" onerror="this.src='logo.png'">
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- LÓGICA DE JUEGO Y RETROALIMENTACIÓN FORMATIVA -->
+    <script>
+        let currentChallenge = 1;
+        let globalScore = 5.0;
+        let breakdown = {
+            preparacion: 1.0,
+            insumos: 1.0,
+            insercion: 1.0,
+            sincronizacion: 1.0,
+            verificacion: 1.0
+        };
+
+        // --- RETO 1: CRIBA DE PASOS SNG ---
+        const rawChallenge1Steps = [
+            { id: 1, text: "Higiene de manos clínico con antiséptico", correct: true },
+            { id: 2, text: "Inspección visual de permeabilidad de fosas nasales", correct: true },
+            { id: 3, text: "Medición de la longitud de la sonda a introducir (NEX)", correct: true },
+            { id: 4, text: "Lubricación de la punta con gel hidrosoluble", correct: true },
+            { id: 5, text: "Introducción sincronizada con la deglución del paciente", correct: true },
+            { id: 6, text: "Verificación de la correcta ubicación gástrica", correct: true },
+            { id: 7, text: "Soplar aire fuertemente a la sonda antes de meterla", correct: false },
+            { id: 8, text: "Lubricar la sonda con vaselina líquida estéril", correct: false },
+            { id: 9, text: "Fijar fuertemente con esparadrapo tirando de la nariz", correct: false },
+            { id: 10, text: "Introducir la sonda con el paciente completamente acostado", correct: false }
+        ];
+        let reto1SelectedIds = [];
+        let reto1OrderList = [];
+
+        // --- RETO 2: INSUMOS SNG ---
+        const suppliesList = [
+            { id: 'sngLevin', text: 'Sonda Levin Calibre 14-16 Fr', image: 'images/jeringa_5ml.png', correct: true },
+            { id: 'gelWater', text: 'Lubricante Hidrosoluble (Gel)', image: 'images/torundas_alcohol_70.png', correct: true },
+            { id: 'syringAsepto', text: 'Jeringa de Asepto (50-60 ml)', image: 'images/jeringa_insulina_1ml.png', correct: true },
+            { id: 'stetho', text: 'Estetoscopio Clínico', image: 'images/aguja_21g_1_1_2_verde.png', correct: true },
+            { id: 'phStrips', text: 'Tiras Reactivas de pH Gástrico', image: 'images/ampolla_diclofenaco_75mg_3ml.png', correct: true },
+            { id: 'waterCup', text: 'Vaso con Agua y Pitillo', image: 'images/guantes_manejo_limpios.png', correct: true },
+            { id: 'tape', text: 'Fijación Adhesiva Hipoalergénica', image: 'images/ampolla_diclofenaco_vencida.png', correct: true },
+            { id: 'gloves', text: 'Guantes de Manejo Limpios', image: 'images/aguja_pediatrica_25g_5_8.png', correct: true },
+            { id: 'foley', text: 'Sonda Foley Vesical con Balón', image: 'images/jeringa_insulina_1ml.png', correct: false },
+            { id: 'dobhoff', text: 'Sonda Dobhoff 8 Fr con Guía', image: 'images/jeringa_5ml.png', correct: false },
+            { id: 'vaseline', text: 'Vaselina Líquida Oleosa', image: 'images/torundas_alcohol_70.png', correct: false },
+            { id: 'luer3ml', text: 'Jeringa Luer-Lock de 3 ml', image: 'images/aguja_21g_1_1_2_verde.png', correct: false }
+        ];
+        let reto2SelectedIds = [];
+
+        // UTILIDADES
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function hideAllScreens() {
+            const screens = ['screen-welcome', 'screen-case', 'screen-reto-1', 'screen-reto-1-order', 'screen-reto-2', 'screen-mp-1', 'screen-mp-2', 'screen-mp-3', 'screen-mp-4', 'screen-mp-5', 'screen-result'];
+            screens.forEach(id => document.getElementById(id).classList.add('hidden'));
+        }
+
+        function updateProgressUI() {
+            const container = document.getElementById('progress-container');
+            if (currentChallenge < 1 || currentChallenge > 5) {
+                container.classList.add('hidden');
+                return;
+            }
+            container.classList.remove('hidden');
+            document.getElementById('step-label').innerText = `Mini-puzzle ${currentChallenge} de 5`;
+
+            const nodes = document.querySelectorAll('#step-nodes .step-node');
+            nodes.forEach((node, idx) => {
+                node.classList.remove('active', 'completed');
+                if (idx < currentChallenge - 1) node.classList.add('completed');
+                else if (idx === currentChallenge - 1) node.classList.add('active');
+            });
+        }
+
+        function selectProcedure(type) {
+            if (type === 'B') {
+                hideAllScreens();
+                document.getElementById('screen-case').classList.remove('hidden');
+            } else {
+                alert("Procedimiento no asignado en la orden médica de Doña Carmen Ortiz. Selecciona la opción B.");
+            }
+        }
+
+        function startChallenge(num) {
+            currentChallenge = num;
+            hideAllScreens();
+            updateProgressUI();
+
+            if (num === 1) {
+                renderReto1();
+                document.getElementById('screen-reto-1').classList.remove('hidden');
+            } else if (num === 2) {
+                renderSuppliesSelector();
+                document.getElementById('screen-reto-2').classList.remove('hidden');
+            } else if (num === 3) {
+                initMP1();
+                document.getElementById('screen-mp-1').classList.remove('hidden');
+            } else if (num === 4) {
+                initMP3();
+                document.getElementById('screen-mp-3').classList.remove('hidden');
+            } else if (num === 5) {
+                initMP5();
+                document.getElementById('screen-mp-5').classList.remove('hidden');
+            }
+        }
+
+        // CONTROL DE RETROALIMENTACIÓN FORMATIVA
+        function showFeedback(isCorrect, titleText, message, onConfirm) {
+            const overlay = document.getElementById('feedback-overlay');
+            const card = document.getElementById('feedback-card');
+            const icon = document.getElementById('feedback-icon');
+            const title = document.getElementById('feedback-title');
+            const msg = document.getElementById('feedback-message');
+            const btn = document.getElementById('feedback-btn');
+
+            if (isCorrect) {
+                card.className = "bg-slate-900 border border-emerald-500/40 p-6 sm:p-8 rounded-2xl max-w-md w-full text-center space-y-4 shadow-2xl shadow-emerald-500/10";
+                icon.className = "w-14 h-14 rounded-full flex items-center justify-center mx-auto border border-emerald-500/40 bg-emerald-500/20 text-emerald-400 font-bold";
+                icon.innerHTML = "✓";
+                title.className = "text-xl font-bold text-emerald-400";
+                btn.className = "w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition";
+            } else {
+                card.className = "bg-slate-900 border border-red-500/40 p-6 sm:p-8 rounded-2xl max-w-md w-full text-center space-y-4 shadow-2xl shadow-red-500/10";
+                icon.className = "w-14 h-14 rounded-full flex items-center justify-center mx-auto border border-red-500/40 bg-red-500/20 text-red-400 font-bold";
+                icon.innerHTML = "✕";
+                title.className = "text-xl font-bold text-red-400";
+                btn.className = "w-full py-2.5 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl text-sm transition";
+            }
+
+            title.innerText = titleText;
+            msg.innerText = message;
+            overlay.classList.remove('hidden');
+            window._feedbackCallback = onConfirm;
+        }
+
+        function closeFeedback() {
+            document.getElementById('feedback-overlay').classList.add('hidden');
+            if (window._feedbackCallback) {
+                window._feedbackCallback();
+                window._feedbackCallback = null;
+            }
+        }
+
+        function triggerFatalError(reason) {
+            globalScore = 0.0;
+            showFeedback(false, "¡FALLO CLÍNICO CRÍTICO!", `${reason}\n\nLa simulación ha sido abortada por seguridad del paciente.`, () => {
+                showFinalResults();
+            });
+        }
+
+        function resetGame() {
+            globalScore = 5.0;
+            breakdown = { preparacion: 1.0, insumos: 1.0, insercion: 1.0, sincronizacion: 1.0, verificacion: 1.0 };
+            reto1SelectedIds = [];
+            reto2SelectedIds = [];
+            currentChallenge = 1;
+            hideAllScreens();
+            document.getElementById('screen-welcome').classList.remove('hidden');
+            updateProgressUI();
+        }
+
+        // --- RETO 1: PASOS Y ORGANIZACIÓN ---
+        function renderReto1() {
+            const container = document.getElementById('reto1-grid');
+            container.innerHTML = '';
+            reto1SelectedIds = [];
+            updateReto1Counter();
+
+            const shuffled = shuffleArray(rawChallenge1Steps);
+            shuffled.forEach(step => {
+                const btn = document.createElement('button');
+                btn.className = "p-3 rounded-xl border border-slate-700 bg-slate-800/60 hover:border-cyan-500/50 text-left transition flex items-center justify-between gap-2";
+                btn.innerHTML = `<span class="leading-tight">${step.text}</span> <input type="checkbox" class="pointer-events-none">`;
+                btn.onclick = () => {
+                    const idx = reto1SelectedIds.indexOf(step.id);
+                    const chk = btn.querySelector('input');
+                    if (idx > -1) {
+                        reto1SelectedIds.splice(idx, 1);
+                        btn.classList.remove('border-cyan-500', 'bg-cyan-950/20');
+                        chk.checked = false;
+                    } else {
+                        if (reto1SelectedIds.length >= 6) {
+                            alert("Solo debes seleccionar 6 acciones esenciales.");
+                            return;
+                        }
+                        reto1SelectedIds.push(step.id);
+                        btn.classList.add('border-cyan-500', 'bg-cyan-950/20');
+                        chk.checked = true;
+                    }
+                    updateReto1Counter();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function updateReto1Counter() {
+            document.getElementById('reto1-count').innerText = `${reto1SelectedIds.length} de 6 seleccionados`;
+        }
+
+        function validateReto1() {
+            if (reto1SelectedIds.length !== 6) {
+                alert("Debes seleccionar exactamente 6 acciones antes de continuar.");
+                return;
+            }
+            const correctIds = rawChallenge1Steps.filter(s => s.correct).map(s => s.id);
+            const isAllCorrect = correctIds.every(id => reto1SelectedIds.includes(id));
+
+            if (isAllCorrect) {
+                showFeedback(true, "¡Excelente Criba!", "Has seleccionado las 6 acciones correctas de preparación y bioseguridad.", () => {
+                    renderReto1Order();
+                });
+            } else {
+                breakdown.preparacion -= 0.5;
+                globalScore -= 0.5;
+                showFeedback(false, "Advertencia de Protocolo", "Has seleccionado distractores incorrectos (ej. usar vaselina o reencapuchar). Se aplica penalización.", () => {
+                    renderReto1Order();
+                });
+            }
+        }
+
+        function renderReto1Order() {
+            hideAllScreens();
+            document.getElementById('screen-reto-1-order').classList.remove('hidden');
+            reto1OrderList = rawChallenge1Steps.filter(s => reto1SelectedIds.includes(s.id));
+            reto1OrderList = shuffleArray(reto1OrderList);
+            drawReto1OrderUI();
+        }
+
+        function drawReto1OrderUI() {
+            const container = document.getElementById('reto1-order-list');
+            container.innerHTML = '';
+            reto1OrderList.forEach((step, idx) => {
+                const item = document.createElement('div');
+                item.className = "p-3 rounded-xl border border-slate-700 bg-slate-800 flex justify-between items-center text-xs";
+                item.innerHTML = `
+                    <span class="font-bold text-cyan-400 mr-2">${idx + 1}.</span>
+                    <span class="flex-1 leading-snug">${step.text}</span>
+                    <div class="flex gap-1 ml-2">
+                        <button onclick="moveReto1Order(${idx}, -1)" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 rounded text-slate-200">▲</button>
+                        <button onclick="moveReto1Order(${idx}, 1)" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 rounded text-slate-200">▼</button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function moveReto1Order(index, dir) {
+            const newIndex = index + dir;
+            if (newIndex < 0 || newIndex >= reto1OrderList.length) return;
+            const temp = reto1OrderList[index];
+            reto1OrderList[index] = reto1OrderList[newIndex];
+            reto1OrderList[newIndex] = temp;
+            drawReto1OrderUI();
+        }
+
+        function validateReto1Order() {
+            const correctOrder = [1, 2, 3, 4, 5, 6];
+            const currentOrder = reto1OrderList.map(s => s.id);
+            const isCorrect = correctOrder.every((id, idx) => currentOrder[idx] === id);
+
+            if (isCorrect) {
+                showFeedback(true, "Secuencia Perfecta", "Has organizado el protocolo en su estricto orden clínico.", () => {
+                    startChallenge(2);
+                });
+            } else {
+                breakdown.preparacion -= 0.5;
+                globalScore -= 0.5;
+                showFeedback(false, "Error de Secuencia", "El orden de acciones no es totalmente lógico (ej. verificar antes de introducir). Se ajusta la puntuación.", () => {
+                    startChallenge(2);
+                });
+            }
+        }
+
+        // --- RETO 2: INSUMOS (TARJETAS LOCALES) ---
+        function renderSuppliesSelector() {
+            const container = document.getElementById('reto2-grid');
+            container.innerHTML = '';
+            reto2SelectedIds = [];
+            updateReto2Counter();
+
+            const shuffledSupplies = shuffleArray(suppliesList);
+            shuffledSupplies.forEach(sup => {
+                const card = document.createElement('div');
+                card.className = "supply-card p-3 flex flex-col justify-between items-center text-center";
+                card.innerHTML = `
+                    <div class="w-full h-24 bg-slate-900/60 rounded-xl p-2 flex items-center justify-center border border-slate-700/50 mb-2 overflow-hidden">
+                        <img src="${sup.image}" alt="${sup.text}" class="max-h-full max-w-full object-contain filter drop-shadow-md">
+                    </div>
+                    <div class="w-full flex-1 flex flex-col justify-between">
+                        <h4 class="text-xs font-bold text-slate-100 leading-tight my-1">${sup.text}</h4>
+                        <div class="mt-2 flex items-center justify-between border-t border-slate-700/60 pt-2 w-full">
+                            <span class="text-[10px] text-slate-400 font-medium tracking-wide uppercase">Seleccionar</span>
+                            <input type="checkbox" class="pointer-events-none h-4 w-4 rounded accent-cyan-500">
+                        </div>
+                    </div>
+                `;
+                card.onclick = () => {
+                    const idx = reto2SelectedIds.indexOf(sup.id);
+                    const chk = card.querySelector('input');
+                    if (idx > -1) {
+                        reto2SelectedIds.splice(idx, 1);
+                        card.classList.remove('selected');
+                        chk.checked = false;
+                    } else {
+                        if (reto2SelectedIds.length >= 8) {
+                            alert("Ya has seleccionado los 8 insumos requeridos.");
+                            return;
+                        }
+                        reto2SelectedIds.push(sup.id);
+                        card.classList.add('selected');
+                        chk.checked = true;
+                    }
+                    updateReto2Counter();
+                };
+                container.appendChild(card);
+            });
+        }
+
+        function updateReto2Counter() {
+            document.getElementById('reto2-count').innerText = `${reto2SelectedIds.length}/8 Seleccionados`;
+        }
+
+        function validateReto2() {
+            if (reto2SelectedIds.length !== 8) {
+                alert("Debes seleccionar exactamente los 8 insumos requeridos para la bandeia.");
+                return;
+            }
+            const correctIds = suppliesList.filter(s => s.correct).map(s => s.id);
+            const isAllCorrect = correctIds.every(id => reto2SelectedIds.includes(id));
+
+            if (isAllCorrect) {
+                showFeedback(true, "Mesa Completa", "Has equipado la bandeja con todos los elementos idóneos para Doña Carmen.", () => {
+                    startChallenge(3);
+                });
+            } else {
+                if (reto2SelectedIds.includes('vaseline')) {
+                    breakdown.insumos -= 1.0;
+                    globalScore -= 1.0;
+                    showFeedback(false, "¡Advertencia: Vaselina Seleccionada!", "Has seleccionado vaselina. Aunque es lubricante, NO es hidrosoluble y puede causar neumonía lipoidea si entra a la vía aérea. Penalización -1.0 pto.", () => {
+                        startChallenge(3);
+                    });
+                } else {
+                    breakdown.insumos -= 0.5;
+                    globalScore -= 0.5;
+                    showFeedback(false, "Insumos Inadecuados", "Has seleccionado elementos incorrectos (ej. Sonda Foley o Jeringa Luer-lock de 3 ml).", () => {
+                        startChallenge(3);
+                    });
+                }
+            }
+        }
+
+        // --- MINI-PUZZLE 1: SPOTTER ---
+        function initMP1() {}
+
+        function selectNasalFossa(fossa) {
+            if (fossa === 'derecha') {
+                showFeedback(true, "¡Excelente Valoración!", "Has detectado la obstrucción mecánica de la fosa izquierda de Doña Carmen antes de proceder. Seleccionar la fosa derecha evita traumatismos y asegura el paso fácil.", () => {
+                    hideAllScreens();
+                    document.getElementById('screen-mp-2').classList.remove('hidden');
+                });
+            } else {
+                breakdown.insercion -= 0.5;
+                globalScore -= 0.5;
+                showFeedback(false, "¡Atención: Fosa Obstruida!", "Has intentado insertar en la fosa izquierda (obstrucción del 90% por desviación septal). Forzar la sonda causará dolor agudo y epistaxis. Se redirige a la fosa derecha con penalización.", () => {
+                    hideAllScreens();
+                    document.getElementById('screen-mp-2').classList.remove('hidden');
+                });
+            }
+        }
+
+        // --- MINI-PUZZLE 2: NEX ---
+        let nexSeq = [];
+        function clickNEX(point) {
+            if (!nexSeq.includes(point)) {
+                nexSeq.push(point);
+                document.getElementById('nex-sequence').innerText = nexSeq.join(' -> ');
+            }
+        }
+
+        function validateMP2() {
+            const seqStr = nexSeq.join('');
+            const cm = parseInt(document.getElementById('nex-cm-slider').value);
+
+            if (seqStr === 'NEX' && cm >= 50 && cm <= 60) {
+                showFeedback(true, "¡Medición Exacta NEX!", "Has obtenido la longitud recomendada (55 cm). Garantiza posicionamiento gástrico superando el esfínter esofágico inferior.", () => {
+                    startChallenge(4);
+                });
+            } else {
+                breakdown.insercion -= 0.5;
+                globalScore -= 0.5;
+                let msg = "Error de medición. ";
+                if (seqStr !== 'NEX') msg += "La secuencia anatómicamente correcta es Nariz -> Oreja -> Xifoides (NEX). ";
+                if (cm < 50) msg += "Marca muy corta (<50 cm): riesgo de drenar en el esófago y causar broncoaspiración.";
+                if (cm > 60) msg += "Marca muy larga (>60 cm): la sonda se acodará en el estómago o pasará al duodeno.";
+
+                showFeedback(false, "Error de Medición NEX", msg, () => {
+                    startChallenge(4);
+                });
+            }
+        }
+
+        // --- MINI-PUZZLE 3: ÁNGULO ---
+        let currentAngle = 0;
+        let canvas, ctx;
+
+        function initMP3() {
+            canvas = document.getElementById('angle-canvas');
+            ctx = canvas.getContext('2d');
+            currentAngle = 45;
+
+            function drawRadar(angle) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(20, 140);
+                ctx.lineTo(260, 140);
+                ctx.stroke();
+
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.arc(140, 140, 80, -Math.PI, 0);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                const rad = (angle) * (Math.PI / 180);
+                const endX = 140 - Math.cos(rad) * 90;
+                const endY = 140 - Math.sin(rad) * 90;
+
+                ctx.strokeStyle = (angle <= 20) ? '#10b981' : '#ef4444';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(140, 140);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+            }
+
+            function handleMove(e) {
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX || e.touches[0].clientX) - rect.left;
+                const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+                const dx = 140 - x;
+                const dy = 140 - y;
+                let deg = Math.atan2(dy, dx) * (180 / Math.PI);
+                if (deg < 0) deg = 0;
+                if (deg > 180) deg = 180;
+
+                currentAngle = Math.round(deg);
+                document.getElementById('current-angle-text').innerText = currentAngle;
+                drawRadar(currentAngle);
+            }
+
+            canvas.onmousemove = handleMove;
+            canvas.ontouchmove = handleMove;
+            drawRadar(currentAngle);
+        }
+
+        function validateMP3() {
+            if (currentAngle <= 25) {
+                showFeedback(true, "¡Ángulo Correcto!", "Al dirigir la sonda hacia abajo y hacia atrás (suelo nasal), evitas la resistencia de los cornetes y accedes de forma natural a la nasofaringe.", () => {
+                    initMP4();
+                });
+            } else {
+                breakdown.insercion -= 0.5;
+                globalScore -= 0.5;
+                showFeedback(false, "¡Error de Técnica!", "Apuntaste la sonda hacia arriba (hacia los cornetes). Esto causa dolor agudo, microdesgarros y riesgo de epistaxis.", () => {
+                    initMP4();
+                });
+            }
+        }
+
+        // --- MINI-PUZZLE 4: QTE Y EMERGENCIA ---
+        let qteInterval = null;
+        let qtePos = 0;
+        let qteDir = 1;
+
+        function initMP4() {
+            hideAllScreens();
+            document.getElementById('screen-mp-4').classList.remove('hidden');
+            document.getElementById('emergency-box').classList.add('hidden');
+
+            const needle = document.getElementById('qte-needle');
+            qtePos = 0;
+            if (qteInterval) clearInterval(qteInterval);
+
+            qteInterval = setInterval(() => {
+                qtePos += 2 * qteDir;
+                if (qtePos >= 95) qteDir = -1;
+                if (qtePos <= 0) qteDir = 1;
+                needle.style.left = `${qtePos}%`;
+            }, 20);
+        }
+
+        function triggerQTE() {
+            clearInterval(qteInterval);
+            if (qtePos >= 40 && qtePos <= 60) {
+                showFeedback(true, "¡Sincronización Perfecta!", "Has introducido la sonda en el momento exacto de la deglución. La epiglotis bloqueó la vía respiratoria canalizando la sonda al esófago.", () => {
+                    startChallenge(5);
+                });
+            } else {
+                document.getElementById('emergency-box').classList.remove('hidden');
+            }
+        }
+
+        function emergencyWithdraw() {
+            document.getElementById('emergency-box').classList.add('hidden');
+            breakdown.sincronizacion -= 0.5;
+            globalScore -= 0.5;
+            showFeedback(false, "¡Alerta Crítica Salvada!", "La sonda ingresó a la tráquea. Al retirarla rápidamente salvaste a la paciente de una asfixia. Reintenta la maniobra.", () => {
+                initMP4();
+            });
+        }
+
+        // --- MINI-PUZZLE 5: TRIÁNGULO DE VERIFICACIÓN ---
+        let verifications = { ph: false, auscultation: false, water: false };
+
+        function initMP5() {
+            verifications = { ph: false, auscultation: false, water: false };
+            document.getElementById('vstatus-ph').innerText = "Pendiente";
+            document.getElementById('vstatus-auscultation').innerText = "Pendiente";
+            document.getElementById('vstatus-water').innerText = "Pendiente";
+        }
+
+        function runVerification(type) {
+            if (type === 'ph') {
+                verifications.ph = true;
+                document.getElementById('vstatus-ph').innerText = "✓ pH 3.5 (Ácido)";
+                document.getElementById('vstatus-ph').className = "text-[10px] text-emerald-400 font-bold";
+            } else if (type === 'auscultation') {
+                verifications.auscultation = true;
+                document.getElementById('vstatus-auscultation').innerText = "✓ Burbujeo Audible";
+                document.getElementById('vstatus-auscultation').className = "text-[10px] text-emerald-400 font-bold";
+            } else if (type === 'water') {
+                verifications.water = true;
+                document.getElementById('vstatus-water').innerText = "✓ Sin Burbujeo";
+                document.getElementById('vstatus-water').className = "text-[10px] text-emerald-400 font-bold";
+            }
+        }
+
+        function validateMP5() {
+            if (verifications.ph && verifications.auscultation && verifications.water) {
+                showFeedback(true, "¡Triple Verificación Completada!", "El pH ácido (<4.0) descarta la ubicación pulmonar y el burbujeo epigástrico confirma un posicionamiento gástrico seguro.", () => {
+                    showFinalResults();
+                });
+            } else {
+                triggerFatalError("Iniciar infusión o fijar la sonda sin completar el triángulo de verificación constituye negligencia grave. Riesgo de inundación pulmonar.");
+            }
+        }
+
+        // --- RESULTADOS GLOBALES ---
+        function showFinalResults() {
+            hideAllScreens();
+            document.getElementById('screen-result').classList.remove('hidden');
+
+            const scoreEl = document.getElementById('result-score');
+            const titleEl = document.getElementById('result-title');
+            const descEl = document.getElementById('result-desc');
+            const badgeEl = document.getElementById('result-badge');
+            const breakdownEl = document.getElementById('result-breakdown');
+
+            if (globalScore < 0) globalScore = 0;
+            scoreEl.innerText = `${globalScore.toFixed(1)} / 5.0`;
+
+            if (globalScore === 5.0) {
+                badgeEl.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto border border-emerald-500/40 bg-emerald-500/20 text-emerald-400 font-bold";
+                badgeEl.innerText = "✓";
+                titleEl.className = "text-xs font-bold uppercase tracking-wider mt-1 text-emerald-400";
+                titleEl.innerText = "EXCELENCIA TÉCNICA - EXPERTO SNG";
+                descEl.innerText = "Doña Carmen respira aliviada, su abdomen está descomprimido y el procedimiento se ejecutó con estándares óptimos de seguridad clínica.";
+            } else if (globalScore >= 3.0) {
+                badgeEl.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto border border-amber-500/40 bg-amber-500/20 text-amber-400 font-bold";
+                badgeEl.innerText = "⚠️";
+                titleEl.className = "text-xs font-bold uppercase tracking-wider mt-1 text-amber-400";
+                titleEl.innerText = "APROBADO CON RECOMENDACIONES";
+                descEl.innerText = "Has completado el procedimiento, pero cometiste errores técnicos o demoras que afectaron el confort del paciente.";
+            } else {
+                badgeEl.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto border border-red-500/40 bg-red-500/20 text-red-400 font-bold";
+                badgeEl.innerText = "✕";
+                titleEl.className = "text-xs font-bold uppercase tracking-wider mt-1 text-red-400";
+                titleEl.innerText = "PROCEDIMIENTO FALLIDO / REPROBADO";
+                descEl.innerText = "Se han cometido errores críticos de seguridad que pusieron en peligro la vida de la paciente (riesgo de intubación traqueal o traumatismo).";
+            }
+
+            breakdownEl.innerHTML = `
+                <div class="font-bold border-b border-slate-700 pb-1 mb-1">Desglose de Calificación:</div>
+                <div class="flex justify-between"><span>1. Preparación y Protocolo:</span> <span class="font-bold">${breakdown.preparacion.toFixed(1)}/1.0</span></div>
+                <div class="flex justify-between"><span>2. Mesa de Insumos:</span> <span class="font-bold">${breakdown.insumos.toFixed(1)}/1.0</span></div>
+                <div class="flex justify-between"><span>3. Inspección y Medición:</span> <span class="font-bold">${breakdown.insercion.toFixed(1)}/1.0</span></div>
+                <div class="flex justify-between"><span>4. Sincronización Deglución:</span> <span class="font-bold">${breakdown.sincronizacion.toFixed(1)}/1.0</span></div>
+                <div class="flex justify-between"><span>5. Triple Verificación:</span> <span class="font-bold">${breakdown.verificacion.toFixed(1)}/1.0</span></div>
+            `;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            resetGame();
+        });
+    </script>
+</body>
+</html>
