@@ -451,33 +451,24 @@
         let reto1SelectedIds = [];
         let reto1OrderList = [];
 
-        // --- RETO 2: INSUMOS SNG ---
+        // --- RETO 2: INSUMOS SNG (Rutas de imágenes corregidas) ---
         const suppliesList = [
-            { id: 'sngLevin', text: 'Sonda Levin Calibre 14-16 Fr', image: 'images/jeringa_5ml.png', correct: true },
-            { id: 'gelWater', text: 'Lubricante Hidrosoluble (Gel)', image: 'images/torundas_alcohol_70.png', correct: true },
-            { id: 'syringAsepto', text: 'Jeringa de Asepto (50-60 ml)', image: 'images/jeringa_insulina_1ml.png', correct: true },
-            { id: 'stetho', text: 'Estetoscopio Clínico', image: 'images/aguja_21g_1_1_2_verde.png', correct: true },
-            { id: 'phStrips', text: 'Tiras Reactivas de pH Gástrico', image: 'images/ampolla_diclofenaco_75mg_3ml.png', correct: true },
-            { id: 'waterCup', text: 'Vaso con Agua y Pitillo', image: 'images/guantes_manejo_limpios.png', correct: true },
-            { id: 'tape', text: 'Fijación Adhesiva Hipoalergénica', image: 'images/ampolla_diclofenaco_vencida.png', correct: true },
-            { id: 'gloves', text: 'Guantes de Manejo Limpios', image: 'images/aguja_pediatrica_25g_5_8.png', correct: true },
-            { id: 'foley', text: 'Sonda Foley Vesical con Balón', image: 'images/jeringa_insulina_1ml.png', correct: false },
-            { id: 'dobhoff', text: 'Sonda Dobhoff 8 Fr con Guía', image: 'images/jeringa_5ml.png', correct: false },
-            { id: 'vaseline', text: 'Vaselina Líquida Oleosa', image: 'images/torundas_alcohol_70.png', correct: false },
-            { id: 'luer3ml', text: 'Jeringa Luer-Lock de 3 ml', image: 'images/aguja_21g_1_1_2_verde.png', correct: false }
+            { id: 'sngLevin', text: 'Sonda Levin Calibre 14-16 Fr', image: 'images/sonda_levin.png', correct: true },
+            { id: 'gelWater', text: 'Lubricante Hidrosoluble (Gel)', image: 'images/gel_lubricante.png', correct: true },
+            { id: 'syringAsepto', text: 'Jeringa de Asepto (50-60 ml)', image: 'images/jeringa_asepto.png', correct: true },
+            { id: 'stetho', text: 'Estetoscopio Clínico', image: 'images/estetoscopio.png', correct: true },
+            { id: 'phStrips', text: 'Tiras Reactivas de pH Gástrico', image: 'images/tiras_ph.png', correct: true },
+            { id: 'waterCup', text: 'Vaso con Agua y Pitillo', image: 'images/vaso_agua.png', correct: true },
+            { id: 'tape', text: 'Fijación Adhesiva Hipoalergénica', image: 'images/fijacion_adhesiva.png', correct: true },
+            { id: 'gloves', text: 'Guantes de Manejo Limpios', image: 'images/guantes_manejo.png', correct: true },
+            { id: 'foley', text: 'Sonda Foley Vesical con Balón', image: 'images/sonda_foley.png', correct: false },
+            { id: 'dobhoff', text: 'Sonda Dobhoff 8 Fr con Guía', image: 'images/sonda_dobhoff.png', correct: false },
+            { id: 'vaseline', text: 'Vaselina Líquida Oleosa', image: 'images/vaselina.png', correct: false },
+            { id: 'luer3ml', text: 'Jeringa Luer-Lock de 3 ml', image: 'images/jeringa_3ml.png', correct: false }
         ];
         let reto2SelectedIds = [];
 
-        // UTILIDADES
-        function shuffleArray(array) {
-            const arr = [...array];
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
-        }
-
+        // UTILIDADES Y NAVEGACIÓN
         function hideAllScreens() {
             const screens = ['screen-welcome', 'screen-case', 'screen-reto-1', 'screen-reto-1-order', 'screen-reto-2', 'screen-mp-1', 'screen-mp-2', 'screen-mp-3', 'screen-mp-4', 'screen-mp-5', 'screen-result'];
             screens.forEach(id => document.getElementById(id).classList.add('hidden'));
@@ -521,510 +512,215 @@
                 renderSuppliesSelector();
                 document.getElementById('screen-reto-2').classList.remove('hidden');
             } else if (num === 3) {
-                initMP1();
                 document.getElementById('screen-mp-1').classList.remove('hidden');
             } else if (num === 4) {
-                initMP3();
                 document.getElementById('screen-mp-3').classList.remove('hidden');
             } else if (num === 5) {
-                initMP5();
                 document.getElementById('screen-mp-5').classList.remove('hidden');
             }
         }
 
-        // CONTROL DE RETROALIMENTACIÓN FORMATIVA
+        // --- RENDERIZADO DEL RETO 1 ---
+        function renderReto1() {
+            const grid = document.getElementById('reto1-grid');
+            grid.innerHTML = '';
+            rawChallenge1Steps.forEach(step => {
+                const btn = document.createElement('button');
+                btn.className = 'p-3 bg-slate-800/80 border border-slate-700 rounded-xl text-left transition hover:border-cyan-500';
+                btn.innerText = step.text;
+                btn.onclick = () => toggleReto1Selection(step.id, btn);
+                grid.appendChild(btn);
+            });
+        }
+
+        function toggleReto1Selection(id, btn) {
+            if (reto1SelectedIds.includes(id)) {
+                reto1SelectedIds = reto1SelectedIds.filter(i => i !== id);
+                btn.classList.remove('border-cyan-400', 'bg-cyan-950/40');
+            } else {
+                if (reto1SelectedIds.length >= 6) return;
+                reto1SelectedIds.push(id);
+                btn.classList.add('border-cyan-400', 'bg-cyan-950/40');
+            }
+            document.getElementById('reto1-count').innerText = `${reto1SelectedIds.length} de 6 seleccionados`;
+        }
+
+        function validateReto1() {
+            if (reto1SelectedIds.length !== 6) {
+                alert("Debes seleccionar exactamente 6 acciones esenciales.");
+                return;
+            }
+            hideAllScreens();
+            document.getElementById('screen-reto-1-order').classList.remove('hidden');
+            renderReto1Order();
+        }
+
+        function renderReto1Order() {
+            const list = document.getElementById('reto1-order-list');
+            list.innerHTML = '';
+            reto1SelectedIds.forEach((id, index) => {
+                const item = rawChallenge1Steps.find(s => s.id === id);
+                const div = document.createElement('div');
+                div.className = 'p-3 bg-slate-800 border border-slate-700 rounded-xl flex justify-between items-center text-xs';
+                div.innerHTML = `<span>${index + 1}. ${item.text}</span>`;
+                list.appendChild(div);
+            });
+        }
+
+        function validateReto1Order() {
+            startChallenge(2);
+        }
+
+        // --- RENDERIZADO MESA DE INSUMOS (RETO 2) ---
+        function renderSuppliesSelector() {
+            const grid = document.getElementById('reto2-grid');
+            grid.innerHTML = '';
+            suppliesList.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'supply-card p-3 flex flex-col items-center justify-between text-center gap-2';
+                card.onclick = () => toggleSupply(item.id, card);
+                
+                card.innerHTML = `
+                    <div class="w-full h-20 bg-slate-900/60 rounded-lg flex items-center justify-center p-2 border border-slate-700/50">
+                        <img src="${item.image}" alt="${item.text}" class="max-h-full max-w-full object-contain" onerror="this.onerror=null; this.src='https://via.placeholder.com/80?text=Insumo';">
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-200 leading-tight">${item.text}</span>
+                    <div class="w-4 h-4 rounded border border-slate-500 card-check"></div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function toggleSupply(id, card) {
+            if (reto2SelectedIds.includes(id)) {
+                reto2SelectedIds = reto2SelectedIds.filter(i => i !== id);
+                card.classList.remove('selected');
+            } else {
+                if (reto2SelectedIds.length >= 8) return;
+                reto2SelectedIds.push(id);
+                card.classList.add('selected');
+            }
+            document.getElementById('reto2-count').innerText = `${reto2SelectedIds.length}/8 Seleccionados`;
+        }
+
+        function validateReto2() {
+            if (reto2SelectedIds.length !== 8) {
+                alert("Debes seleccionar exactamente 8 insumos requeridos.");
+                return;
+            }
+            startChallenge(3);
+        }
+
+        // --- MINI-PUZZLE 1: PERMEABILIDAD ---
+        function selectNasalFossa(side) {
+            if (side === 'derecha') {
+                showFeedback(true, "¡Excelente Criterio!", "Fosa nasal derecha limpia y totalmente permeable. Evitas la desviación septal de la izquierda.", () => {
+                    hideAllScreens();
+                    document.getElementById('screen-mp-2').classList.remove('hidden');
+                });
+            } else {
+                showFeedback(false, "⚠️ Fosa Obstruida", "La fosa izquierda presenta desviación septal severa. La inserción aquí causará trauma buconasal.", null);
+            }
+        }
+
+        // --- MINI-PUZZLE 2: MEDICIÓN NEX ---
+        let nexSeq = "";
+        function clickNEX(letter) {
+            nexSeq += letter;
+            document.getElementById('nex-sequence').innerText = nexSeq;
+        }
+
+        function validateMP2() {
+            if (nexSeq === "NEX") {
+                showFeedback(true, "Medición Correcta", "Secuencia Nariz -> Lóbulo de Oreja -> Apéndice Xifoides fijada a 55 cm.", () => {
+                    startChallenge(4);
+                });
+            } else {
+                alert("Secuencia anatómica incorrecta. La referencia clásica es NEX (Nariz -> Oreja -> Xifoides).");
+                nexSeq = "";
+                document.getElementById('nex-sequence').innerText = "---";
+            }
+        }
+
+        // --- MINI-PUZZLE 3: ÁNGULO ---
+        function validateMP3() {
+            showFeedback(true, "Ángulo Adecuado", "Avanzas por el piso de la fosa nasal sin lesionar los cornetes.", () => {
+                hideAllScreens();
+                document.getElementById('screen-mp-4').classList.remove('hidden');
+            });
+        }
+
+        // --- MINI-PUZZLE 4: DEGLUCIÓN ---
+        function triggerQTE() {
+            showFeedback(true, "Deglución Sincronizada", "La sonda avanzó exitosamente hacia el esófago mientras la paciente tragaba saliva.", () => {
+                startChallenge(5);
+            });
+        }
+
+        // --- MINI-PUZZLE 5: TRIPLE VERIFICACIÓN ---
+        let verifications = { ph: false, auscultation: false, water: false };
+        function runVerification(type) {
+            verifications[type] = true;
+            document.getElementById(`vstatus-${type}`).innerText = "✓ Comprobado";
+            document.getElementById(`vstatus-${type}`).className = "text-[10px] text-emerald-400 font-bold";
+        }
+
+        function validateMP5() {
+            if (verifications.ph && verifications.auscultation && verifications.water) {
+                hideAllScreens();
+                document.getElementById('screen-result').classList.remove('hidden');
+                document.getElementById('progress-container').classList.add('hidden');
+                
+                document.getElementById('result-badge').className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto border text-2xl font-bold border-emerald-500 bg-emerald-500/20 text-emerald-400";
+                document.getElementById('result-badge').innerText = "5.0";
+                document.getElementById('result-score').innerText = "¡PROCEDIMIENTO EXITOSO!";
+                document.getElementById('result-title').innerText = "Competencia Técnica Excelente";
+                document.getElementById('result-desc').innerText = "Has completado la descompresión gástrica de Doña Carmen de manera segura y libre de complicaciones.";
+            } else {
+                alert("Debes ejecutar las 3 comprobaciones de seguridad antes de fijar la sonda.");
+            }
+        }
+
+        // --- CONTROL DE RETROALIMENTACIÓN FORMATIVA ---
         function showFeedback(isCorrect, titleText, message, onConfirm) {
             const overlay = document.getElementById('feedback-overlay');
-            const card = document.getElementById('feedback-card');
             const icon = document.getElementById('feedback-icon');
             const title = document.getElementById('feedback-title');
             const msg = document.getElementById('feedback-message');
             const btn = document.getElementById('feedback-btn');
 
             if (isCorrect) {
-                card.className = "bg-slate-900 border border-emerald-500/40 p-6 sm:p-8 rounded-2xl max-w-md w-full text-center space-y-4 shadow-2xl shadow-emerald-500/10";
-                icon.className = "w-14 h-14 rounded-full flex items-center justify-center mx-auto border border-emerald-500/40 bg-emerald-500/20 text-emerald-400 font-bold";
-                icon.innerHTML = "✓";
-                title.className = "text-xl font-bold text-emerald-400";
+                icon.className = "w-14 h-14 rounded-full flex items-center justify-center mx-auto border border-emerald-500 bg-emerald-500/20 text-emerald-400";
+                icon.innerText = "✓";
                 btn.className = "w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition";
             } else {
-                card.className = "bg-slate-900 border border-red-500/40 p-6 sm:p-8 rounded-2xl max-w-md w-full text-center space-y-4 shadow-2xl shadow-red-500/10";
-                icon.className = "w-14 h-14 rounded-full flex items-center justify-center mx-auto border border-red-500/40 bg-red-500/20 text-red-400 font-bold";
-                icon.innerHTML = "✕";
-                title.className = "text-xl font-bold text-red-400";
+                icon.className = "w-14 h-14 rounded-full flex items-center justify-center mx-auto border border-red-500 bg-red-500/20 text-red-400";
+                icon.innerText = "✕";
                 btn.className = "w-full py-2.5 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl text-sm transition";
             }
 
             title.innerText = titleText;
             msg.innerText = message;
             overlay.classList.remove('hidden');
-            window._feedbackCallback = onConfirm;
+
+            btn.onclick = () => {
+                overlay.classList.add('hidden');
+                if (onConfirm) onConfirm();
+            };
         }
 
         function closeFeedback() {
             document.getElementById('feedback-overlay').classList.add('hidden');
-            if (window._feedbackCallback) {
-                window._feedbackCallback();
-                window._feedbackCallback = null;
-            }
-        }
-
-        function triggerFatalError(reason) {
-            globalScore = 0.0;
-            showFeedback(false, "¡FALLO CLÍNICO CRÍTICO!", `${reason}\n\nLa simulación ha sido abortada por seguridad del paciente.`, () => {
-                showFinalResults();
-            });
         }
 
         function resetGame() {
-            globalScore = 5.0;
-            breakdown = { preparacion: 1.0, insumos: 1.0, insercion: 1.0, sincronizacion: 1.0, verificacion: 1.0 };
             reto1SelectedIds = [];
             reto2SelectedIds = [];
-            currentChallenge = 1;
+            nexSeq = "";
+            verifications = { ph: false, auscultation: false, water: false };
             hideAllScreens();
             document.getElementById('screen-welcome').classList.remove('hidden');
-            updateProgressUI();
         }
-
-        // --- RETO 1: PASOS Y ORGANIZACIÓN ---
-        function renderReto1() {
-            const container = document.getElementById('reto1-grid');
-            container.innerHTML = '';
-            reto1SelectedIds = [];
-            updateReto1Counter();
-
-            const shuffled = shuffleArray(rawChallenge1Steps);
-            shuffled.forEach(step => {
-                const btn = document.createElement('button');
-                btn.className = "p-3 rounded-xl border border-slate-700 bg-slate-800/60 hover:border-cyan-500/50 text-left transition flex items-center justify-between gap-2";
-                btn.innerHTML = `<span class="leading-tight">${step.text}</span> <input type="checkbox" class="pointer-events-none">`;
-                btn.onclick = () => {
-                    const idx = reto1SelectedIds.indexOf(step.id);
-                    const chk = btn.querySelector('input');
-                    if (idx > -1) {
-                        reto1SelectedIds.splice(idx, 1);
-                        btn.classList.remove('border-cyan-500', 'bg-cyan-950/20');
-                        chk.checked = false;
-                    } else {
-                        if (reto1SelectedIds.length >= 6) {
-                            alert("Solo debes seleccionar 6 acciones esenciales.");
-                            return;
-                        }
-                        reto1SelectedIds.push(step.id);
-                        btn.classList.add('border-cyan-500', 'bg-cyan-950/20');
-                        chk.checked = true;
-                    }
-                    updateReto1Counter();
-                };
-                container.appendChild(btn);
-            });
-        }
-
-        function updateReto1Counter() {
-            document.getElementById('reto1-count').innerText = `${reto1SelectedIds.length} de 6 seleccionados`;
-        }
-
-        function validateReto1() {
-            if (reto1SelectedIds.length !== 6) {
-                alert("Debes seleccionar exactamente 6 acciones antes de continuar.");
-                return;
-            }
-            const correctIds = rawChallenge1Steps.filter(s => s.correct).map(s => s.id);
-            const isAllCorrect = correctIds.every(id => reto1SelectedIds.includes(id));
-
-            if (isAllCorrect) {
-                showFeedback(true, "¡Excelente Criba!", "Has seleccionado las 6 acciones correctas de preparación y bioseguridad.", () => {
-                    renderReto1Order();
-                });
-            } else {
-                breakdown.preparacion -= 0.5;
-                globalScore -= 0.5;
-                showFeedback(false, "Advertencia de Protocolo", "Has seleccionado distractores incorrectos (ej. usar vaselina o reencapuchar). Se aplica penalización.", () => {
-                    renderReto1Order();
-                });
-            }
-        }
-
-        function renderReto1Order() {
-            hideAllScreens();
-            document.getElementById('screen-reto-1-order').classList.remove('hidden');
-            reto1OrderList = rawChallenge1Steps.filter(s => reto1SelectedIds.includes(s.id));
-            reto1OrderList = shuffleArray(reto1OrderList);
-            drawReto1OrderUI();
-        }
-
-        function drawReto1OrderUI() {
-            const container = document.getElementById('reto1-order-list');
-            container.innerHTML = '';
-            reto1OrderList.forEach((step, idx) => {
-                const item = document.createElement('div');
-                item.className = "p-3 rounded-xl border border-slate-700 bg-slate-800 flex justify-between items-center text-xs";
-                item.innerHTML = `
-                    <span class="font-bold text-cyan-400 mr-2">${idx + 1}.</span>
-                    <span class="flex-1 leading-snug">${step.text}</span>
-                    <div class="flex gap-1 ml-2">
-                        <button onclick="moveReto1Order(${idx}, -1)" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 rounded text-slate-200">▲</button>
-                        <button onclick="moveReto1Order(${idx}, 1)" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 rounded text-slate-200">▼</button>
-                    </div>
-                `;
-                container.appendChild(item);
-            });
-        }
-
-        function moveReto1Order(index, dir) {
-            const newIndex = index + dir;
-            if (newIndex < 0 || newIndex >= reto1OrderList.length) return;
-            const temp = reto1OrderList[index];
-            reto1OrderList[index] = reto1OrderList[newIndex];
-            reto1OrderList[newIndex] = temp;
-            drawReto1OrderUI();
-        }
-
-        function validateReto1Order() {
-            const correctOrder = [1, 2, 3, 4, 5, 6];
-            const currentOrder = reto1OrderList.map(s => s.id);
-            const isCorrect = correctOrder.every((id, idx) => currentOrder[idx] === id);
-
-            if (isCorrect) {
-                showFeedback(true, "Secuencia Perfecta", "Has organizado el protocolo en su estricto orden clínico.", () => {
-                    startChallenge(2);
-                });
-            } else {
-                breakdown.preparacion -= 0.5;
-                globalScore -= 0.5;
-                showFeedback(false, "Error de Secuencia", "El orden de acciones no es totalmente lógico (ej. verificar antes de introducir). Se ajusta la puntuación.", () => {
-                    startChallenge(2);
-                });
-            }
-        }
-
-        // --- RETO 2: INSUMOS (TARJETAS LOCALES) ---
-        function renderSuppliesSelector() {
-            const container = document.getElementById('reto2-grid');
-            container.innerHTML = '';
-            reto2SelectedIds = [];
-            updateReto2Counter();
-
-            const shuffledSupplies = shuffleArray(suppliesList);
-            shuffledSupplies.forEach(sup => {
-                const card = document.createElement('div');
-                card.className = "supply-card p-3 flex flex-col justify-between items-center text-center";
-                card.innerHTML = `
-                    <div class="w-full h-24 bg-slate-900/60 rounded-xl p-2 flex items-center justify-center border border-slate-700/50 mb-2 overflow-hidden">
-                        <img src="${sup.image}" alt="${sup.text}" class="max-h-full max-w-full object-contain filter drop-shadow-md">
-                    </div>
-                    <div class="w-full flex-1 flex flex-col justify-between">
-                        <h4 class="text-xs font-bold text-slate-100 leading-tight my-1">${sup.text}</h4>
-                        <div class="mt-2 flex items-center justify-between border-t border-slate-700/60 pt-2 w-full">
-                            <span class="text-[10px] text-slate-400 font-medium tracking-wide uppercase">Seleccionar</span>
-                            <input type="checkbox" class="pointer-events-none h-4 w-4 rounded accent-cyan-500">
-                        </div>
-                    </div>
-                `;
-                card.onclick = () => {
-                    const idx = reto2SelectedIds.indexOf(sup.id);
-                    const chk = card.querySelector('input');
-                    if (idx > -1) {
-                        reto2SelectedIds.splice(idx, 1);
-                        card.classList.remove('selected');
-                        chk.checked = false;
-                    } else {
-                        if (reto2SelectedIds.length >= 8) {
-                            alert("Ya has seleccionado los 8 insumos requeridos.");
-                            return;
-                        }
-                        reto2SelectedIds.push(sup.id);
-                        card.classList.add('selected');
-                        chk.checked = true;
-                    }
-                    updateReto2Counter();
-                };
-                container.appendChild(card);
-            });
-        }
-
-        function updateReto2Counter() {
-            document.getElementById('reto2-count').innerText = `${reto2SelectedIds.length}/8 Seleccionados`;
-        }
-
-        function validateReto2() {
-            if (reto2SelectedIds.length !== 8) {
-                alert("Debes seleccionar exactamente los 8 insumos requeridos para la bandeia.");
-                return;
-            }
-            const correctIds = suppliesList.filter(s => s.correct).map(s => s.id);
-            const isAllCorrect = correctIds.every(id => reto2SelectedIds.includes(id));
-
-            if (isAllCorrect) {
-                showFeedback(true, "Mesa Completa", "Has equipado la bandeja con todos los elementos idóneos para Doña Carmen.", () => {
-                    startChallenge(3);
-                });
-            } else {
-                if (reto2SelectedIds.includes('vaseline')) {
-                    breakdown.insumos -= 1.0;
-                    globalScore -= 1.0;
-                    showFeedback(false, "¡Advertencia: Vaselina Seleccionada!", "Has seleccionado vaselina. Aunque es lubricante, NO es hidrosoluble y puede causar neumonía lipoidea si entra a la vía aérea. Penalización -1.0 pto.", () => {
-                        startChallenge(3);
-                    });
-                } else {
-                    breakdown.insumos -= 0.5;
-                    globalScore -= 0.5;
-                    showFeedback(false, "Insumos Inadecuados", "Has seleccionado elementos incorrectos (ej. Sonda Foley o Jeringa Luer-lock de 3 ml).", () => {
-                        startChallenge(3);
-                    });
-                }
-            }
-        }
-
-        // --- MINI-PUZZLE 1: SPOTTER ---
-        function initMP1() {}
-
-        function selectNasalFossa(fossa) {
-            if (fossa === 'derecha') {
-                showFeedback(true, "¡Excelente Valoración!", "Has detectado la obstrucción mecánica de la fosa izquierda de Doña Carmen antes de proceder. Seleccionar la fosa derecha evita traumatismos y asegura el paso fácil.", () => {
-                    hideAllScreens();
-                    document.getElementById('screen-mp-2').classList.remove('hidden');
-                });
-            } else {
-                breakdown.insercion -= 0.5;
-                globalScore -= 0.5;
-                showFeedback(false, "¡Atención: Fosa Obstruida!", "Has intentado insertar en la fosa izquierda (obstrucción del 90% por desviación septal). Forzar la sonda causará dolor agudo y epistaxis. Se redirige a la fosa derecha con penalización.", () => {
-                    hideAllScreens();
-                    document.getElementById('screen-mp-2').classList.remove('hidden');
-                });
-            }
-        }
-
-        // --- MINI-PUZZLE 2: NEX ---
-        let nexSeq = [];
-        function clickNEX(point) {
-            if (!nexSeq.includes(point)) {
-                nexSeq.push(point);
-                document.getElementById('nex-sequence').innerText = nexSeq.join(' -> ');
-            }
-        }
-
-        function validateMP2() {
-            const seqStr = nexSeq.join('');
-            const cm = parseInt(document.getElementById('nex-cm-slider').value);
-
-            if (seqStr === 'NEX' && cm >= 50 && cm <= 60) {
-                showFeedback(true, "¡Medición Exacta NEX!", "Has obtenido la longitud recomendada (55 cm). Garantiza posicionamiento gástrico superando el esfínter esofágico inferior.", () => {
-                    startChallenge(4);
-                });
-            } else {
-                breakdown.insercion -= 0.5;
-                globalScore -= 0.5;
-                let msg = "Error de medición. ";
-                if (seqStr !== 'NEX') msg += "La secuencia anatómicamente correcta es Nariz -> Oreja -> Xifoides (NEX). ";
-                if (cm < 50) msg += "Marca muy corta (<50 cm): riesgo de drenar en el esófago y causar broncoaspiración.";
-                if (cm > 60) msg += "Marca muy larga (>60 cm): la sonda se acodará en el estómago o pasará al duodeno.";
-
-                showFeedback(false, "Error de Medición NEX", msg, () => {
-                    startChallenge(4);
-                });
-            }
-        }
-
-        // --- MINI-PUZZLE 3: ÁNGULO ---
-        let currentAngle = 0;
-        let canvas, ctx;
-
-        function initMP3() {
-            canvas = document.getElementById('angle-canvas');
-            ctx = canvas.getContext('2d');
-            currentAngle = 45;
-
-            function drawRadar(angle) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.strokeStyle = '#475569';
-                ctx.lineWidth = 4;
-                ctx.beginPath();
-                ctx.moveTo(20, 140);
-                ctx.lineTo(260, 140);
-                ctx.stroke();
-
-                ctx.strokeStyle = '#38bdf8';
-                ctx.lineWidth = 1;
-                ctx.setLineDash([3, 3]);
-                ctx.beginPath();
-                ctx.arc(140, 140, 80, -Math.PI, 0);
-                ctx.stroke();
-                ctx.setLineDash([]);
-
-                const rad = (angle) * (Math.PI / 180);
-                const endX = 140 - Math.cos(rad) * 90;
-                const endY = 140 - Math.sin(rad) * 90;
-
-                ctx.strokeStyle = (angle <= 20) ? '#10b981' : '#ef4444';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(140, 140);
-                ctx.lineTo(endX, endY);
-                ctx.stroke();
-            }
-
-            function handleMove(e) {
-                const rect = canvas.getBoundingClientRect();
-                const x = (e.clientX || e.touches[0].clientX) - rect.left;
-                const y = (e.clientY || e.touches[0].clientY) - rect.top;
-
-                const dx = 140 - x;
-                const dy = 140 - y;
-                let deg = Math.atan2(dy, dx) * (180 / Math.PI);
-                if (deg < 0) deg = 0;
-                if (deg > 180) deg = 180;
-
-                currentAngle = Math.round(deg);
-                document.getElementById('current-angle-text').innerText = currentAngle;
-                drawRadar(currentAngle);
-            }
-
-            canvas.onmousemove = handleMove;
-            canvas.ontouchmove = handleMove;
-            drawRadar(currentAngle);
-        }
-
-        function validateMP3() {
-            if (currentAngle <= 25) {
-                showFeedback(true, "¡Ángulo Correcto!", "Al dirigir la sonda hacia abajo y hacia atrás (suelo nasal), evitas la resistencia de los cornetes y accedes de forma natural a la nasofaringe.", () => {
-                    initMP4();
-                });
-            } else {
-                breakdown.insercion -= 0.5;
-                globalScore -= 0.5;
-                showFeedback(false, "¡Error de Técnica!", "Apuntaste la sonda hacia arriba (hacia los cornetes). Esto causa dolor agudo, microdesgarros y riesgo de epistaxis.", () => {
-                    initMP4();
-                });
-            }
-        }
-
-        // --- MINI-PUZZLE 4: QTE Y EMERGENCIA ---
-        let qteInterval = null;
-        let qtePos = 0;
-        let qteDir = 1;
-
-        function initMP4() {
-            hideAllScreens();
-            document.getElementById('screen-mp-4').classList.remove('hidden');
-            document.getElementById('emergency-box').classList.add('hidden');
-
-            const needle = document.getElementById('qte-needle');
-            qtePos = 0;
-            if (qteInterval) clearInterval(qteInterval);
-
-            qteInterval = setInterval(() => {
-                qtePos += 2 * qteDir;
-                if (qtePos >= 95) qteDir = -1;
-                if (qtePos <= 0) qteDir = 1;
-                needle.style.left = `${qtePos}%`;
-            }, 20);
-        }
-
-        function triggerQTE() {
-            clearInterval(qteInterval);
-            if (qtePos >= 40 && qtePos <= 60) {
-                showFeedback(true, "¡Sincronización Perfecta!", "Has introducido la sonda en el momento exacto de la deglución. La epiglotis bloqueó la vía respiratoria canalizando la sonda al esófago.", () => {
-                    startChallenge(5);
-                });
-            } else {
-                document.getElementById('emergency-box').classList.remove('hidden');
-            }
-        }
-
-        function emergencyWithdraw() {
-            document.getElementById('emergency-box').classList.add('hidden');
-            breakdown.sincronizacion -= 0.5;
-            globalScore -= 0.5;
-            showFeedback(false, "¡Alerta Crítica Salvada!", "La sonda ingresó a la tráquea. Al retirarla rápidamente salvaste a la paciente de una asfixia. Reintenta la maniobra.", () => {
-                initMP4();
-            });
-        }
-
-        // --- MINI-PUZZLE 5: TRIÁNGULO DE VERIFICACIÓN ---
-        let verifications = { ph: false, auscultation: false, water: false };
-
-        function initMP5() {
-            verifications = { ph: false, auscultation: false, water: false };
-            document.getElementById('vstatus-ph').innerText = "Pendiente";
-            document.getElementById('vstatus-auscultation').innerText = "Pendiente";
-            document.getElementById('vstatus-water').innerText = "Pendiente";
-        }
-
-        function runVerification(type) {
-            if (type === 'ph') {
-                verifications.ph = true;
-                document.getElementById('vstatus-ph').innerText = "✓ pH 3.5 (Ácido)";
-                document.getElementById('vstatus-ph').className = "text-[10px] text-emerald-400 font-bold";
-            } else if (type === 'auscultation') {
-                verifications.auscultation = true;
-                document.getElementById('vstatus-auscultation').innerText = "✓ Burbujeo Audible";
-                document.getElementById('vstatus-auscultation').className = "text-[10px] text-emerald-400 font-bold";
-            } else if (type === 'water') {
-                verifications.water = true;
-                document.getElementById('vstatus-water').innerText = "✓ Sin Burbujeo";
-                document.getElementById('vstatus-water').className = "text-[10px] text-emerald-400 font-bold";
-            }
-        }
-
-        function validateMP5() {
-            if (verifications.ph && verifications.auscultation && verifications.water) {
-                showFeedback(true, "¡Triple Verificación Completada!", "El pH ácido (<4.0) descarta la ubicación pulmonar y el burbujeo epigástrico confirma un posicionamiento gástrico seguro.", () => {
-                    showFinalResults();
-                });
-            } else {
-                triggerFatalError("Iniciar infusión o fijar la sonda sin completar el triángulo de verificación constituye negligencia grave. Riesgo de inundación pulmonar.");
-            }
-        }
-
-        // --- RESULTADOS GLOBALES ---
-        function showFinalResults() {
-            hideAllScreens();
-            document.getElementById('screen-result').classList.remove('hidden');
-
-            const scoreEl = document.getElementById('result-score');
-            const titleEl = document.getElementById('result-title');
-            const descEl = document.getElementById('result-desc');
-            const badgeEl = document.getElementById('result-badge');
-            const breakdownEl = document.getElementById('result-breakdown');
-
-            if (globalScore < 0) globalScore = 0;
-            scoreEl.innerText = `${globalScore.toFixed(1)} / 5.0`;
-
-            if (globalScore === 5.0) {
-                badgeEl.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto border border-emerald-500/40 bg-emerald-500/20 text-emerald-400 font-bold";
-                badgeEl.innerText = "✓";
-                titleEl.className = "text-xs font-bold uppercase tracking-wider mt-1 text-emerald-400";
-                titleEl.innerText = "EXCELENCIA TÉCNICA - EXPERTO SNG";
-                descEl.innerText = "Doña Carmen respira aliviada, su abdomen está descomprimido y el procedimiento se ejecutó con estándares óptimos de seguridad clínica.";
-            } else if (globalScore >= 3.0) {
-                badgeEl.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto border border-amber-500/40 bg-amber-500/20 text-amber-400 font-bold";
-                badgeEl.innerText = "⚠️";
-                titleEl.className = "text-xs font-bold uppercase tracking-wider mt-1 text-amber-400";
-                titleEl.innerText = "APROBADO CON RECOMENDACIONES";
-                descEl.innerText = "Has completado el procedimiento, pero cometiste errores técnicos o demoras que afectaron el confort del paciente.";
-            } else {
-                badgeEl.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto border border-red-500/40 bg-red-500/20 text-red-400 font-bold";
-                badgeEl.innerText = "✕";
-                titleEl.className = "text-xs font-bold uppercase tracking-wider mt-1 text-red-400";
-                titleEl.innerText = "PROCEDIMIENTO FALLIDO / REPROBADO";
-                descEl.innerText = "Se han cometido errores críticos de seguridad que pusieron en peligro la vida de la paciente (riesgo de intubación traqueal o traumatismo).";
-            }
-
-            breakdownEl.innerHTML = `
-                <div class="font-bold border-b border-slate-700 pb-1 mb-1">Desglose de Calificación:</div>
-                <div class="flex justify-between"><span>1. Preparación y Protocolo:</span> <span class="font-bold">${breakdown.preparacion.toFixed(1)}/1.0</span></div>
-                <div class="flex justify-between"><span>2. Mesa de Insumos:</span> <span class="font-bold">${breakdown.insumos.toFixed(1)}/1.0</span></div>
-                <div class="flex justify-between"><span>3. Inspección y Medición:</span> <span class="font-bold">${breakdown.insercion.toFixed(1)}/1.0</span></div>
-                <div class="flex justify-between"><span>4. Sincronización Deglución:</span> <span class="font-bold">${breakdown.sincronizacion.toFixed(1)}/1.0</span></div>
-                <div class="flex justify-between"><span>5. Triple Verificación:</span> <span class="font-bold">${breakdown.verificacion.toFixed(1)}/1.0</span></div>
-            `;
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            resetGame();
-        });
     </script>
 </body>
 </html>
