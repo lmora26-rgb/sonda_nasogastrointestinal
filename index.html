@@ -417,7 +417,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <span class="text-[10px] text-slate-400 hidden sm:inline">Entorno Virtual SNG v2</span>
-                <img src="logo.png" alt="Logo Hospital Digital Universitario" class="h-12 w-auto object-contain" onerror="this.src='logo.png'">
+                <img src="logo.png" alt="Logo Hospital Digital Universitario" class="h-7 w-auto object-contain" onerror="this.src='logo.png'">
             </div>
         </footer>
 
@@ -545,7 +545,513 @@
                 card.className = "bg-slate-900 border-2 border-emerald-500/80 p-6 sm:p-8 rounded-2xl max-w-md w-full text-center space-y-4 shadow-2xl shadow-emerald-950";
                 icon.className = "w-14 h-14 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-400 bg-emerald-500/20 text-emerald-400 text-2xl font-bold";
                 icon.innerText = "✓";
+                title.className = "text-xl font-bold text-emerald-300";
+                btn.className = "w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-sm transition shadow-lg shadow-emerald-600/30";
+            } else {
+                card.className = "bg-slate-900 border-2 border-red-500/80 p-6 sm:p-8 rounded-2xl max-w-md w-full text-center space-y-4 shadow-2xl shadow-red-950";
+                icon.className = "w-14 h-14 rounded-full flex items-center justify-center mx-auto border-2 border-red-400 bg-red-500/20 text-red-400 text-2xl font-bold";
+                icon.innerText = "✕";
+                title.className = "text-xl font-bold text-red-400";
+                btn.className = "w-full py-2.5 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl text-sm transition shadow-lg shadow-red-600/30";
             }
+
+            title.innerText = titleText;
+            msg.innerText = message;
+            overlay.classList.remove('hidden');
+
+            btn.onclick = () => {
+                overlay.classList.add('hidden');
+                if (onConfirm) onConfirm();
+            };
+        }
+
+        function closeFeedback() {
+            document.getElementById('feedback-overlay').classList.add('hidden');
+        }
+
+        // --- RETO 1 LÓGICA ---
+        let shuffledReto1Steps = [];
+        function renderReto1() {
+            shuffledReto1Steps = shuffleArray(rawChallenge1Steps);
+            reto1SelectedIds = [];
+            const grid = document.getElementById('reto1-grid');
+            grid.innerHTML = '';
+
+            shuffledReto1Steps.forEach(step => {
+                const btn = document.createElement('button');
+                btn.id = `r1-step-${step.id}`;
+                btn.className = "p-3 bg-slate-800/90 border border-slate-700/80 rounded-xl text-left transition hover:border-cyan-500/50 flex items-start gap-2 text-slate-300";
+                btn.onclick = () => toggleReto1Step(step.id);
+                btn.innerHTML = `
+                    <span class="w-4 h-4 rounded border border-slate-600 flex-shrink-0 mt-0.5 flex items-center justify-center text-[10px] font-bold text-cyan-400 check-icon"></span>
+                    <span>${step.text}</span>
+                `;
+                grid.appendChild(btn);
+            });
+            updateReto1Counter();
+        }
+
+        function toggleReto1Step(id) {
+            const idx = reto1SelectedIds.indexOf(id);
+            if (idx >= 0) {
+                reto1SelectedIds.splice(idx, 1);
+            } else {
+                if (reto1SelectedIds.length >= 6) {
+                    alert("Ya has seleccionado los 6 pasos. Desmarca uno para cambiar.");
+                    return;
+                }
+                reto1SelectedIds.push(id);
+            }
+            updateReto1UI();
+        }
+
+        function updateReto1UI() {
+            shuffledReto1Steps.forEach(step => {
+                const btn = document.getElementById(`r1-step-${step.id}`);
+                const isSel = reto1SelectedIds.includes(step.id);
+                const checkIcon = btn.querySelector('.check-icon');
+
+                if (isSel) {
+                    btn.className = "p-3 bg-cyan-950/60 border-2 border-cyan-400 rounded-xl text-left transition flex items-start gap-2 text-slate-100 shadow-md shadow-cyan-950";
+                    checkIcon.innerText = "✓";
+                    checkIcon.className = "w-4 h-4 rounded border border-cyan-400 bg-cyan-500/30 flex-shrink-0 mt-0.5 flex items-center justify-center text-[10px] font-bold text-cyan-300 check-icon";
+                } else {
+                    btn.className = "p-3 bg-slate-800/90 border border-slate-700/80 rounded-xl text-left transition hover:border-cyan-500/50 flex items-start gap-2 text-slate-300";
+                    checkIcon.innerText = "";
+                    checkIcon.className = "w-4 h-4 rounded border border-slate-600 flex-shrink-0 mt-0.5 flex items-center justify-center text-[10px] font-bold text-cyan-400 check-icon";
+                }
+            });
+            updateReto1Counter();
+        }
+
+        function updateReto1Counter() {
+            document.getElementById('reto1-count').innerText = `${reto1SelectedIds.length} de 6 seleccionados`;
+        }
+
+        function validateReto1() {
+            if (reto1SelectedIds.length !== 6) {
+                alert("Debes seleccionar exactamente 6 acciones esenciales de la lista.");
+                return;
+            }
+
+            const incorrects = reto1SelectedIds.filter(id => {
+                const item = rawChallenge1Steps.find(s => s.id === id);
+                return !item.correct;
+            });
+
+            if (incorrects.length === 0) {
+                showFeedback(true, "¡Criba Excelente!", "Has seleccionado correctamente las 6 acciones seguras de protocolo. Ahora ordénalas según la secuencia lógica de atención.", () => {
+                    hideAllScreens();
+                    reto1OrderList = rawChallenge1Steps.filter(s => reto1SelectedIds.includes(s.id));
+                    renderReto1Order();
+                    document.getElementById('screen-reto-1-order').classList.remove('hidden');
+                });
+            } else {
+                breakdown.preparacion -= 0.5;
+                showFeedback(false, "Decisión Inadecuada de Protocolo", "Has incluido una o más acciones incorrectas o peligrosas (como lubricar con vaselina o introducir la sonda en posición totalmente acostado).\n\nRevisa la lista y selecciona solo las prácticas seguras.", null);
+            }
+        }
+
+        function renderReto1Order() {
+            const list = document.getElementById('reto1-order-list');
+            list.innerHTML = '';
+
+            reto1OrderList.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "p-3 bg-slate-800/90 border border-slate-700 rounded-xl flex justify-between items-center text-xs";
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-full bg-cyan-600/30 border border-cyan-400 text-cyan-300 font-bold flex items-center justify-center text-[11px]">${index + 1}</span>
+                        <span class="text-slate-200">${item.text}</span>
+                    </div>
+                    <div class="flex gap-1">
+                        <button onclick="moveOrderItem(${index}, -1)" ${index === 0 ? 'disabled class="opacity-30 p-1 bg-slate-700 rounded"' : 'class="p-1 bg-slate-700 hover:bg-cyan-600 rounded text-slate-200 transition"'}>▲</button>
+                        <button onclick="moveOrderItem(${index}, 1)" ${index === reto1OrderList.length - 1 ? 'disabled class="opacity-30 p-1 bg-slate-700 rounded"' : 'class="p-1 bg-slate-700 hover:bg-cyan-600 rounded text-slate-200 transition"'}>▼</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function moveOrderItem(index, direction) {
+            const targetIndex = index + direction;
+            if (targetIndex < 0 || targetIndex >= reto1OrderList.length) return;
+            const temp = reto1OrderList[index];
+            reto1OrderList[index] = reto1OrderList[targetIndex];
+            reto1OrderList[targetIndex] = temp;
+            renderReto1Order();
+        }
+
+        function validateReto1Order() {
+            let isPerfectOrder = true;
+            for (let i = 0; i < reto1OrderList.length - 1; i++) {
+                if (reto1OrderList[i].id > reto1OrderList[i + 1].id) {
+                    isPerfectOrder = false;
+                    break;
+                }
+            }
+
+            if (isPerfectOrder) {
+                showFeedback(true, "¡Secuencia Correcta!", "El orden lógico de preparación ha sido establecido adecuadamente. Pasa a la mesa de insumos.", () => {
+                    startChallenge(2);
+                });
+            } else {
+                breakdown.preparacion -= 0.3;
+                showFeedback(false, "Secuencia Incorrecta", "Recuerda el orden fisiológico e higiénico:\n1. Higiene de manos.\n2. Inspección nasal.\n3. Medición NEX.\n4. Lubricación.\n5. Inserción deglutoria.\n6. Verificación.", null);
+            }
+        }
+
+        // --- RETO 2 LÓGICA ---
+        let shuffledSupplies = [];
+        function renderSuppliesSelector() {
+            shuffledSupplies = shuffleArray(suppliesList);
+            reto2SelectedIds = [];
+            const grid = document.getElementById('reto2-grid');
+            grid.innerHTML = '';
+
+            shuffledSupplies.forEach(item => {
+                const card = document.createElement('div');
+                card.id = `supply-${item.id}`;
+                card.className = "supply-card p-3 flex flex-col items-center text-center gap-2";
+                card.onclick = () => toggleSupply(item.id);
+                card.innerHTML = `
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 bg-slate-900/80 rounded-xl border border-slate-700 p-1 flex items-center justify-center overflow-hidden">
+                        <img src="${item.image}" alt="${item.text}" class="max-h-full max-w-full object-contain" onerror="this.src='logo.png'">
+                    </div>
+                    <span class="text-[11px] font-medium leading-tight text-slate-200">${item.text}</span>
+                `;
+                grid.appendChild(card);
+            });
+            updateSupplyCounter();
+        }
+
+        function toggleSupply(id) {
+            const idx = reto2SelectedIds.indexOf(id);
+            if (idx >= 0) {
+                reto2SelectedIds.splice(idx, 1);
+            } else {
+                if (reto2SelectedIds.length >= 8) {
+                    alert("Ya has seleccionado los 8 insumos. Desmarca alguno si deseas cambiar tu elección.");
+                    return;
+                }
+                reto2SelectedIds.push(id);
+            }
+
+            shuffledSupplies.forEach(item => {
+                const card = document.getElementById(`supply-${item.id}`);
+                if (reto2SelectedIds.includes(item.id)) {
+                    card.classList.add('selected');
+                } else {
+                    card.classList.remove('selected');
+                }
+            });
+
+            updateSupplyCounter();
+        }
+
+        function updateSupplyCounter() {
+            document.getElementById('reto2-count').innerText = `${reto2SelectedIds.length}/8 Seleccionados`;
+        }
+
+        function validateReto2() {
+            if (reto2SelectedIds.length !== 8) {
+                alert("Debes seleccionar exactamente los 8 insumos indicados para el procedimiento SNG.");
+                return;
+            }
+
+            const incorrectSelections = reto2SelectedIds.filter(id => {
+                const item = suppliesList.find(s => s.id === id);
+                return !item.correct;
+            });
+
+            if (incorrectSelections.length === 0) {
+                showFeedback(true, "¡Mesa Completa y Adecuada!", "Has seleccionado con precisión el material estéril y funcional requerido para la descompresión gástrica.", () => {
+                    startChallenge(3);
+                });
+            } else {
+                breakdown.insumos -= 0.5;
+                showFeedback(false, "Insumos Inadecuados", "Has seleccionado uno o más elementos incorrectos (ej. Vaselina oleosa que produce neumonía lipoidea, o sondas vesicales Foley).\n\nSelecciona el equipo idóneo.", null);
+            }
+        }
+
+        // --- MINI-PUZZLE 1: FOSAS NASALES ---
+        function initMP1() {
+            // Inicializado visualmente
+        }
+
+        function selectNasalFossa(side) {
+            if (side === 'derecha') {
+                showFeedback(true, "Fosa Nasal Correcta", "La fosa nasal derecha presenta 100% de permeabilidad y ausencia de obstrucción anatómica. Permite un paso seguro.", () => {
+                    hideAllScreens();
+                    document.getElementById('screen-mp-2').classList.remove('hidden');
+                    initMP2();
+                });
+            } else {
+                breakdown.insercion -= 0.5;
+                showFeedback(false, "Resistencia e Impactación", "La fosa nasal izquierda de Doña Carmen presenta desviación septal severa (flujo 10%). Forzar la sonda provocará epistaxis y dolor agudo.", null);
+            }
+        }
+
+        // --- MINI-PUZZLE 2: MEDIDA NEX ---
+        let nexUserSeq = [];
+        function initMP2() {
+            nexUserSeq = [];
+            document.getElementById('nex-sequence').innerText = "---";
+            document.getElementById('nex-cm-slider').value = 55;
+            document.getElementById('cm-val').innerText = "55";
+        }
+
+        function clickNEX(letter) {
+            if (nexUserSeq.includes(letter)) return;
+            nexUserSeq.push(letter);
+            document.getElementById('nex-sequence').innerText = nexUserSeq.join(" ➔ ");
+        }
+
+        function validateMP2() {
+            const seq = nexUserSeq.join("");
+            const cm = parseInt(document.getElementById('nex-cm-slider').value);
+
+            if (seq !== "NEX") {
+                breakdown.insercion -= 0.3;
+                showFeedback(false, "Secuencia NEX Errónea", "La medición anatómica reglamentaria es: Nariz ➔ Lóbulo de la Oreja ➔ Apéndice Xifoides (N-E-X).", () => {
+                    initMP2();
+                });
+                return;
+            }
+
+            if (cm < 48 || cm > 58) {
+                breakdown.insercion -= 0.2;
+                showFeedback(false, "Longitud Inadecuada", "Para una paciente de complexión promedio, la distancia NEX se sitúa habitualmente entre 50 y 55 cm. Reajusta la marca.", null);
+                return;
+            }
+
+            showFeedback(true, "Medición Medular Exacta", `Secuencia NEX correcta y distancia de referencia marcada a ${cm} cm.`, () => {
+                startChallenge(4);
+            });
+        }
+
+        // --- MINI-PUZZLE 3: ÁNGULO DE INSERCIÓN NASAL ---
+        let currentAngle = 0;
+        let isDraggingAngle = false;
+
+        function initMP3() {
+            const canvas = document.getElementById('angle-canvas');
+            const ctx = canvas.getContext('2d');
+            currentAngle = 45; // Ámbar de inicio erróneo
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Silueta esquemática de cabeza
+                ctx.strokeStyle = "#475569";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(80, 90, 50, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Fosa nasal origen
+                const originX = 110;
+                const originY = 90;
+
+                ctx.fillStyle = "#38bdf8";
+                ctx.beginPath();
+                ctx.arc(originX, originY, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Vector sonda
+                const rad = (currentAngle * Math.PI) / 180;
+                const length = 100;
+                const targetX = originX + length * Math.cos(rad);
+                const targetY = originY + length * Math.sin(rad);
+
+                // Color según precisión (0° - 15° es verde/correcto)
+                if (currentAngle >= 0 && currentAngle <= 15) {
+                    ctx.strokeStyle = "#10b981";
+                } else {
+                    ctx.strokeStyle = "#f59e0b";
+                }
+
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(originX, originY);
+                ctx.lineTo(targetX, targetY);
+                ctx.stroke();
+
+                document.getElementById('current-angle-text').innerText = Math.round(currentAngle);
+            }
+
+            draw();
+
+            canvas.onmousedown = (e) => { isDraggingAngle = true; updateAngle(e); };
+            canvas.onmousemove = (e) => { if (isDraggingAngle) updateAngle(e); };
+            window.onmouseup = () => { isDraggingAngle = false; };
+
+            function updateAngle(e) {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left - 110;
+                const y = e.clientY - rect.top - 90;
+                let deg = Math.atan2(y, x) * (180 / Math.PI);
+                if (deg < -30) deg = -30;
+                if (deg > 80) deg = 80;
+                currentAngle = deg;
+                draw();
+            }
+        }
+
+        function validateMP3() {
+            if (currentAngle >= -5 && currentAngle <= 15) {
+                showFeedback(true, "Ángulo Anatómico Correcto", "Inserción paralela al suelo de la fosa nasal. La sonda avanza suavemente por el cornete inferior sin traumatismo.", () => {
+                    hideAllScreens();
+                    document.getElementById('screen-mp-4').classList.remove('hidden');
+                    initMP4();
+                });
+            } else {
+                breakdown.insercion -= 0.4;
+                showFeedback(false, "Ángulo Incorrecto (Riesgo de Traumatismo)", "Estás apuntando hacia el techo nasal (cornetes superiores). Esto provoca dolor agudo y sangrado. Apunta horizontalmente hacia la oreja/nuca.", null);
+            }
+        }
+
+        // --- MINI-PUZZLE 4: QTE DEGLUCIÓN Y EMERGENCIA ---
+        let qteAnimId = null;
+        let qtePos = 0;
+        let qteDirection = 1;
+        let qteSpeed = 1.2;
+
+        function initMP4() {
+            qtePos = 0;
+            qteDirection = 1;
+            document.getElementById('emergency-box').classList.add('hidden');
+
+            function animate() {
+                qtePos += qteSpeed * qteDirection;
+                if (qtePos >= 98) { qtePos = 98; qteDirection = -1; }
+                if (qtePos <= 0) { qtePos = 0; qteDirection = 1; }
+
+                const needle = document.getElementById('qte-needle');
+                if (needle) needle.style.left = `${qtePos}%`;
+
+                qteAnimId = requestAnimationFrame(animate);
+            }
+
+            if (qteAnimId) cancelAnimationFrame(qteAnimId);
+            animate();
+        }
+
+        function triggerQTE() {
+            cancelAnimationFrame(qteAnimId);
+
+            // Zona verde está entre 40% y 60%
+            if (qtePos >= 40 && qtePos <= 60) {
+                showFeedback(true, "Sincronización Perfecta", "Avanzaste la sonda durante la deglución con la epiglotis ocluyendo la vía aérea. Sonda avanza hacia el esófago.", () => {
+                    startChallenge(5);
+                });
+            } else {
+                breakdown.sincronizacion -= 0.6;
+                // Activar evento de emergencia broncoaspiración
+                document.getElementById('emergency-box').classList.remove('hidden');
+            }
+        }
+
+        function emergencyWithdraw() {
+            showFeedback(true, "Retiro de Emergencia Correcto", "Has reaccionado velozmente retirando la sonda. La saturación de la paciente se recupera a 98%. Reorienta e intenta nuevamente.", () => {
+                initMP4();
+            });
+        }
+
+        // --- MINI-PUZZLE 5: TRIPLE VERIFICACIÓN GÁSTRICA ---
+        let verificationsDone = { ph: false, auscultation: false, water: false };
+
+        function initMP5() {
+            verificationsDone = { ph: false, auscultation: false, water: false };
+            ['ph', 'auscultation', 'water'].forEach(key => {
+                document.getElementById(`vstatus-${key}`).innerText = "Pendiente";
+                document.getElementById(`vstatus-${key}`).className = "text-[10px] text-slate-400";
+            });
+        }
+
+        function runVerification(type) {
+            if (type === 'ph') {
+                verificationsDone.ph = true;
+                document.getElementById('vstatus-ph').innerText = "pH 3.5 (Ácido) ✓";
+                document.getElementById('vstatus-ph').className = "text-[10px] text-emerald-400 font-bold";
+            } else if (type === 'auscultation') {
+                verificationsDone.auscultation = true;
+                document.getElementById('vstatus-auscultation').innerText = "Burbujeo (+) ✓";
+                document.getElementById('vstatus-auscultation').className = "text-[10px] text-emerald-400 font-bold";
+            } else if (type === 'water') {
+                verificationsDone.water = true;
+                document.getElementById('vstatus-water').innerText = "Sin burbujas ✓";
+                document.getElementById('vstatus-water').className = "text-[10px] text-emerald-400 font-bold";
+            }
+        }
+
+        function validateMP5() {
+            if (!verificationsDone.ph || !verificationsDone.auscultation || !verificationsDone.water) {
+                alert("Debes ejecutar las 3 pruebas del triángulo de verificación de seguridad antes de fijar la sonda.");
+                return;
+            }
+
+            showFeedback(true, "Triple Verificación Exitosa", "Confirmación gástrica absoluta. Sonda ubicada en cuerpo gástrico de forma segura.", () => {
+                finishSimulation();
+            });
+        }
+
+        // --- EVALUACIÓN Y FINALIZACIÓN DE SIMULACIÓN ---
+        function finishSimulation() {
+            hideAllScreens();
+            updateProgressUI();
+
+            // Cálculo final de nota sobre 5.0
+            let finalScore = breakdown.preparacion + breakdown.insumos + breakdown.insercion + breakdown.sincronizacion + breakdown.verificacion;
+            if (finalScore > 5.0) finalScore = 5.0;
+            if (finalScore < 1.0) finalScore = 1.0;
+
+            const scoreElem = document.getElementById('result-score');
+            const titleElem = document.getElementById('result-title');
+            const descElem = document.getElementById('result-desc');
+            const badgeElem = document.getElementById('result-badge');
+            const breakdownElem = document.getElementById('result-breakdown');
+
+            scoreElem.innerText = `${finalScore.toFixed(1)} / 5.0`;
+
+            if (finalScore >= 4.5) {
+                badgeElem.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-400 bg-emerald-500/20 text-emerald-400 text-2xl font-bold";
+                badgeElem.innerText = "A+";
+                titleElem.innerText = "COMPETENCIA CLÍNICA EXCELENTE";
+                titleElem.className = "text-xs font-bold uppercase tracking-wider mt-1 text-emerald-400";
+                descElem.innerText = "Has demostrado un dominio riguroso del protocolo de colocación de sonda nasogástrica, garantizando la seguridad anatómica y el bienestar del paciente.";
+            } else if (finalScore >= 3.0) {
+                badgeElem.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto border-2 border-amber-400 bg-amber-500/20 text-amber-400 text-2xl font-bold";
+                badgeElem.innerText = "B";
+                titleElem.innerText = "COMPETENCIA SATISFACTORIA CON OBSERVACIONES";
+                titleElem.className = "text-xs font-bold uppercase tracking-wider mt-1 text-amber-400";
+                descElem.innerText = "Has completado el procedimiento, pero se registraron desviaciones menores en las maniobras o en la selección de insumos. Revisa el desglose.";
+            } else {
+                badgeElem.className = "w-16 h-16 rounded-full flex items-center justify-center mx-auto border-2 border-red-400 bg-red-500/20 text-red-400 text-2xl font-bold";
+                badgeElem.innerText = "C";
+                titleElem.innerText = "NECESITA REFORZAMIENTO PRÁCTICO";
+                titleElem.className = "text-xs font-bold uppercase tracking-wider mt-1 text-red-400";
+                descElem.innerText = "Se identificaron errores críticos que comprometen la bioseguridad o la integridad del paciente. Se recomienda repetir el simulador.";
+            }
+
+            breakdownElem.innerHTML = `
+                <div class="font-bold border-b border-slate-700 pb-1 mb-1 text-slate-200">Desglose de Calificación:</div>
+                <div class="flex justify-between"><span>Preparación y Protocolo:</span> <span class="font-bold text-cyan-300">${breakdown.preparacion.toFixed(1)}/1.0</span></div>
+                <div class="flex justify-between"><span>Mesa de Insumos:</span> <span class="font-bold text-cyan-300">${breakdown.insumos.toFixed(1)}/1.0</span></div>
+                <div class="flex justify-between"><span>Técnica de Inserción:</span> <span class="font-bold text-cyan-300">${breakdown.insercion.toFixed(1)}/1.0</span></div>
+                <div class="flex justify-between"><span>Sincronización Deglutoria:</span> <span class="font-bold text-cyan-300">${breakdown.sincronizacion.toFixed(1)}/1.0</span></div>
+                <div class="flex justify-between"><span>Triple Verificación:</span> <span class="font-bold text-cyan-300">${breakdown.verificacion.toFixed(1)}/1.0</span></div>
+            `;
+
+            document.getElementById('screen-result').classList.remove('hidden');
+        }
+
+        function resetGame() {
+            breakdown = { preparacion: 1.0, insumos: 1.0, insercion: 1.0, sincronizacion: 1.0, verificacion: 1.0 };
+            currentChallenge = 1;
+            hideAllScreens();
+            updateProgressUI();
+            document.getElementById('screen-welcome').classList.remove('hidden');
         }
     </script>
 </body>
